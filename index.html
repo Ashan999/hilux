@@ -212,7 +212,7 @@ const CONFIG = {
   TANK_CAPACITY:80,
   DEFAULT_FUEL_PRICE:2.70,
   DEFAULT_KM_L:9,
-  DEFAULT_DRIVERS:['Rishi','Ashan','Nadeeshan'],
+  DEFAULT_DRIVERS:['Ahmed','Ali','Kumar','Ashan'],
   GAS_URL:'https://script.google.com/macros/s/AKfycbx6JHuD5GrLQzX0AWw9N3Y9k2q_6N3hd3ijj1iiak2P8GzznK3iRwApl2w7UPrS1ijg/exec'
 };
 const DEBUG = new URLSearchParams(location.search).has('debug') || localStorage.getItem('hilux_debug') === '1';
@@ -346,129 +346,104 @@ const FuelEngine = {
 
 const Sync = {
   isOnline:navigator.onLine,
-  canSend() { return this.isOnline && /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(CONFIG.GAS_URL); },
+  isFlushing:false,
+  canSend() {
+    return this.isOnline && /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(CONFIG.GAS_URL);
+  },
   enqueue(type, data) {
-    const record = { id: makeId(), type, data, timestamp:Date.now(), tries:0 };
-    State.pendingSync.push(record);
-    Storage.save();
-    log('queued sync', record);
-    this.flushPending();
-  },async send(record) {
+    return safe('Queue sync record', () => {
+      if (!['fuel','trip'].includes(type)) throw new Error(`Invalid sync type: ${type}`);
+      const record = { id:makeId(), type, data, timestamp:Date.now(), tries:0 };
+      State.pendingSync.push(record);
+      Storage.save();
+      UI.renderSyncStatus();
+      log('queued sync', record);
+      if (this.canSend()) this.flushPending();
+      return record;
+    }, null);
+  },
+  async send(record) {
+    const action = record.type === 'fuel' ? 'addFuel' : 'addTrip';
+    return new Promise((resolve, reject) => {
+      const callbackName = `hiluxJsonp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      const timeoutMs = 15000;
+      let script = null;
+      let settled = false;
 
-  const action = record.type === 'fuel'
-    ? 'addFuel'
-    : 'addTrip';
+      const cleanup = () => {
+        if (script && script.parentNode) script.parentNode.removeChild(script);
+        try { delete window[callbackName]; } catch { window[callbackName] = undefined; }
+        clearTimeout(timer);
+      };
 
-  return new Promise((resolve, reject) => {
+      const finish = (error, response) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (error) reject(error);
+        else resolve(response);
+      };
 
-    const callbackName =
-      'hiluxSync_' +
-      Date.now() +
-      '_' +
-      Math.random().toString(16).slice(2);
+      window[callbackName] = response => {
+        if (response && response.ok) {
+          finish(null, response);
+        } else {
+          finish(new Error(response?.error || 'Google Sheets sync failed'));
+        }
+      };
 
-    const timeoutMs = 15000;
-
-    let script;
-
-    const cleanup = () => {
+      const timer = setTimeout(() => {
+        finish(new Error('Google Apps Script JSONP request timed out'));
+      }, timeoutMs);
 
       try {
-        delete window[callbackName];
-      } catch(e) {}
+        const url = new URL(CONFIG.GAS_URL);
+        url.searchParams.set('action', action);
+        url.searchParams.set('data', JSON.stringify(record.data || {}));
+        url.searchParams.set('recordId', record.id);
+        url.searchParams.set('callback', callbackName);
 
-      if (script && script.parentNode) {
-        script.parentNode.removeChild(script);
+        script = document.createElement('script');
+        script.src = url.toString();
+        script.async = true;
+        script.onerror = () => finish(new Error('Google Apps Script JSONP request failed'));
+        document.body.appendChild(script);
+      } catch (error) {
+        finish(error);
       }
-
-      clearTimeout(timer);
-    };
-
-    window[callbackName] = (response) => {
-
-      cleanup();
-
-      if (response && response.ok) {
-        resolve(response);
-      } else {
-        reject(
-          new Error(
-            response?.error ||
-            'Google Apps Script sync failed'
-          )
-        );
-      }
-    };
-
-    const url = new URL(CONFIG.GAS_URL);
-
-    url.searchParams.set(
-      'action',
-      action
-    );
-
-    url.searchParams.set(
-      'data',
-      JSON.stringify(record.data)
-    );
-
-    url.searchParams.set(
-      'callback',
-      callbackName
-    );
-
-    script = document.createElement('script');
-
-    script.src = url.toString();
-
-    script.async = true;
-
-    script.onerror = () => {
-
-      cleanup();
-
-      reject(
-        new Error(
-          'Google Apps Script JSONP request failed'
-        )
-      );
-    };
-
-    const timer = setTimeout(() => {
-
-      cleanup();
-
-      reject(
-        new Error(
-          'Google Apps Script request timeout'
-        )
-      );
-
-    }, timeoutMs);
-
-    document.body.appendChild(script);
-
-  });
-}
+    });
   },
   async flushPending() {
+    if (this.isFlushing) return;
     if (!this.canSend() || !State.pendingSync.length) { UI.renderSyncStatus(); return; }
-    const queue = [...State.pendingSync];
-    const remaining = [];
-    for (const record of queue) {
-      try {
-        await this.send(record);
-        log('synced', record.id);
-      } catch (error) {
-        record.tries = num(record.tries) + 1;
-        remaining.push(record);
-        warn('sync failed', error);
-      }
-    }
-    State.pendingSync = remaining;
+
+    this.isFlushing = true;
+    const queue = State.pendingSync.splice(0, State.pendingSync.length);
     Storage.save();
     UI.renderSyncStatus();
+
+    const remaining = [];
+    try {
+      for (const record of queue) {
+        try {
+          await this.send(record);
+          log('synced', record.id);
+        } catch (error) {
+          record.tries = num(record.tries) + 1;
+          record.lastError = error.message || String(error);
+          remaining.push(record);
+          warn('sync failed', record.id, error);
+        }
+      }
+    } finally {
+      State.pendingSync = [...remaining, ...State.pendingSync];
+      this.isFlushing = false;
+      Storage.save();
+      UI.renderSyncStatus();
+    }
+
     if (queue.length && !remaining.length) showToast(`Synced ${queue.length} record(s)`, 'success');
+    else if (remaining.length) showToast(`${remaining.length} record(s) still pending`, 'warning');
   },
   updateOnlineStatus() {
     this.isOnline = navigator.onLine;
