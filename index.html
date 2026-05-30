@@ -44,6 +44,7 @@
     .section-head{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2);margin:20px 0 10px}
     .card,.stat-card,.settings-row,.action-card,.summary-chip{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);backdrop-filter:blur(6px)}
     .input-wrap{display:flex;flex-direction:column;gap:7px}.input-field{background:var(--surface-2);border:1.5px solid var(--border-2);border-radius:var(--r-sm);padding:13px 14px;color:var(--text);font:inherit;width:100%;outline:none}.input-field:focus{border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan-glow);background:var(--cyan-subtle)}.input-field option{background:var(--bg2);color:var(--text)}
+    .note-textarea{min-height:92px;resize:none;line-height:1.45;overflow:hidden}.char-counter{font-size:.7rem;color:var(--text-3);text-align:right;margin-top:-2px}.history-notes{margin-top:8px;display:flex;flex-direction:column;gap:6px}.history-note{background:var(--surface-2);border:1px solid var(--border-2);border-radius:var(--r-xs);padding:8px 10px}.history-note-label{font-size:.6rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:3px}.history-note-text{font-size:.75rem;color:var(--text-2);line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;border-radius:var(--r-sm);padding:14px 22px;font-family:var(--ff-head);font-size:1rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:all var(--dur);user-select:none}.btn:active,.action-card:active{transform:scale(.97)}.btn svg{width:17px;height:17px;stroke-width:2}.btn-primary{background:linear-gradient(135deg,var(--cyan),var(--cyan-dark));color:#000;box-shadow:var(--shadow-cyan)}.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}.btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text-2)}.btn-danger{background:var(--red-dim);border:1.5px solid rgba(239,83,80,.35);color:var(--red)}.btn-full{width:100%}.btn-sm{padding:9px 16px;font-size:.82rem}
     .field-error{font-size:.76rem;color:var(--red);margin-top:4px;display:none}.field-error.show{display:block}
     #screen-welcome{justify-content:center;align-items:center;padding:40px 24px;gap:36px}.welcome-brand{text-align:center}.brand-logo{width:94px;height:94px;margin:0 auto 20px;position:relative}.brand-logo svg{width:94px;height:94px}.brand-tagline{font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);font-weight:700;margin-bottom:10px}.brand-name{font-family:var(--ff-head);font-size:1.85rem;font-weight:700;line-height:1.1}.brand-sub{font-size:.82rem;color:var(--text-2);margin-top:8px}.welcome-form{width:100%;display:flex;flex-direction:column;gap:14px}
@@ -155,12 +156,12 @@
 
   <div id="screen-start-drive" class="screen">
     <div class="topbar"><button class="topbar-icon-btn" data-back="dashboard" aria-label="Back"><svg><use href="#ic-arrow-l"/></svg></button><div class="topbar-title">Start Drive</div><div class="conn-pill online" style="font-size:.68rem;padding:3px 9px"><div class="conn-dot"></div><span id="start-driver-badge">Driver</span></div></div>
-    <div class="scroll-body"><div class="mileage-hero"><div class="mileage-hero-label">Last Recorded Mileage</div><div class="mileage-hero-num" id="start-last-mileage">0</div><div class="mileage-hero-unit">km</div></div><button id="btn-use-last-mileage" class="btn btn-outline btn-full" style="margin-bottom:12px">Use Last Mileage</button><div class="input-wrap"><label class="label" for="start-mileage-input">Current Odometer Reading (km)</label><input id="start-mileage-input" class="input-field" type="number" inputmode="numeric" placeholder="e.g. 152350" min="0"><div class="field-error" id="start-mileage-error">Please enter a valid mileage.</div></div><div class="sp-lg"></div><button id="btn-start-trip" class="btn btn-primary btn-full"><svg><use href="#ic-car"/></svg>Start Trip</button></div>
+    <div class="scroll-body"><div class="mileage-hero"><div class="mileage-hero-label">Last Recorded Mileage</div><div class="mileage-hero-num" id="start-last-mileage">0</div><div class="mileage-hero-unit">km</div></div><button id="btn-use-last-mileage" class="btn btn-outline btn-full" style="margin-bottom:12px">Use Last Mileage</button><div class="input-wrap"><label class="label" for="start-mileage-input">Current Odometer Reading (km)</label><input id="start-mileage-input" class="input-field" type="number" inputmode="numeric" placeholder="e.g. 152350" min="0"><div class="field-error" id="start-mileage-error">Please enter a valid mileage.</div></div><div class="sp"></div><div class="input-wrap"><label class="label" for="start-trip-note">Start Trip Note</label><textarea id="start-trip-note" class="input-field note-textarea" maxlength="500" placeholder="Purpose of trip, destination, customer name, delivery details, etc."></textarea><div class="char-counter" id="start-note-counter">0 / 500</div></div><div class="sp-lg"></div><button id="btn-start-trip" class="btn btn-primary btn-full"><svg><use href="#ic-car"/></svg>Start Trip</button></div>
   </div>
 
   <div id="screen-end-drive" class="screen">
     <div class="topbar"><button class="topbar-icon-btn" data-back="dashboard" aria-label="Back"><svg><use href="#ic-arrow-l"/></svg></button><div class="topbar-title">End Drive</div></div>
-    <div class="scroll-body"><div class="calc-row"><div class="stat-card"><div class="stat-lbl">Driver</div><div class="stat-val c-white" style="font-size:1.1rem" id="end-driver-shown">-</div></div><div class="stat-card"><div class="stat-lbl">Start Mileage</div><div class="stat-val c-cyan" id="end-start-mileage">0</div><div class="stat-unit">km</div></div></div><div class="calc-row"><div class="stat-card"><div class="stat-lbl">Distance Travelled</div><div class="stat-val c-green" id="calc-distance">-</div><div class="stat-unit">km calculated</div></div><div class="stat-card"><div class="stat-lbl">Est. Fuel Used</div><div class="stat-val c-amber" id="calc-fuel-used">-</div><div class="stat-unit">liters</div></div></div><div class="input-wrap"><label class="label" for="end-mileage-input">Current Odometer Reading (km)</label><input id="end-mileage-input" class="input-field" type="number" inputmode="numeric" placeholder="e.g. 152800" min="0"><div class="field-error" id="end-mileage-error">End mileage must be greater than start mileage.</div></div><div class="sp-lg"></div><button id="btn-end-trip" class="btn btn-primary btn-full"><svg><use href="#ic-check"/></svg>Save Trip</button></div>
+    <div class="scroll-body"><div class="calc-row"><div class="stat-card"><div class="stat-lbl">Driver</div><div class="stat-val c-white" style="font-size:1.1rem" id="end-driver-shown">-</div></div><div class="stat-card"><div class="stat-lbl">Start Mileage</div><div class="stat-val c-cyan" id="end-start-mileage">0</div><div class="stat-unit">km</div></div></div><div class="calc-row"><div class="stat-card"><div class="stat-lbl">Distance Travelled</div><div class="stat-val c-green" id="calc-distance">-</div><div class="stat-unit">km calculated</div></div><div class="stat-card"><div class="stat-lbl">Est. Fuel Used</div><div class="stat-val c-amber" id="calc-fuel-used">-</div><div class="stat-unit">liters</div></div></div><div class="input-wrap"><label class="label" for="end-mileage-input">Current Odometer Reading (km)</label><input id="end-mileage-input" class="input-field" type="number" inputmode="numeric" placeholder="e.g. 152800" min="0"><div class="field-error" id="end-mileage-error">End mileage must be greater than start mileage.</div></div><div class="sp"></div><div class="input-wrap"><label class="label" for="end-trip-note">End Trip Note</label><textarea id="end-trip-note" class="input-field note-textarea" maxlength="500" placeholder="Trip completed, issues found, vehicle condition, delivery completed, etc."></textarea><div class="char-counter" id="end-note-counter">0 / 500</div></div><div class="sp-lg"></div><button id="btn-end-trip" class="btn btn-primary btn-full"><svg><use href="#ic-check"/></svg>Save Trip</button></div>
   </div>
 
   <div id="screen-add-fuel" class="screen">
@@ -304,7 +305,7 @@ const FuelEngine = {
     const totalFuel = trips.reduce((sum, t) => sum + num(t.fuelUsed), 0);
     return totalFuel > 0 ? clamp(round2(totalKm / totalFuel), 3, 20) : CONFIG.DEFAULT_KM_L;
   },
-  completeTrip(endMileage) {
+  completeTrip(endMileage, endNote = '') {
     const active = State.activeTrip;
     if (!active) throw new Error('No active trip');
     const distance = endMileage - active.startMileage;
@@ -317,6 +318,7 @@ const FuelEngine = {
       id: makeId(),
       date:State.lastDriveDate, driver:active.driver, vehicle:CONFIG.VEHICLE,
       startMileage:active.startMileage, endMileage, dist:distance, fuelUsed,
+      startNote:active.startNote || '', endNote:sanitizeNote(endNote),
       startTime:active.startTime, endTime:State.lastDriveDate, remaining:State.fuelBalance
     };
     State.tripLog.push(entry);
@@ -525,6 +527,8 @@ const UI = {
     if (State.activeTrip) return this.showEndDrive();
     byId('start-last-mileage').textContent = fmtNum(State.currentMileage);
     byId('start-mileage-input').value = State.currentMileage || '';
+    byId('start-trip-note').value = '';
+    updateNoteCounter('start-trip-note', 'start-note-counter');
     byId('start-driver-badge').textContent = State.driver || 'Driver';
     hideError('start-mileage-error');
     this.goto('start-drive');
@@ -534,6 +538,8 @@ const UI = {
     byId('end-driver-shown').textContent = State.activeTrip.driver;
     byId('end-start-mileage').textContent = fmtNum(State.activeTrip.startMileage);
     byId('end-mileage-input').value = '';
+    byId('end-trip-note').value = '';
+    updateNoteCounter('end-trip-note', 'end-note-counter');
     byId('calc-distance').textContent = '-';
     byId('calc-fuel-used').textContent = '-';
     hideError('end-mileage-error');
@@ -596,7 +602,14 @@ const UI = {
     }
   },
   tripItem(t) {
-    return `<div class="history-item"><div class="history-item-icon"><svg><use href="#ic-route"/></svg></div><div class="history-item-body"><div class="hi-top"><span class="hi-driver">${escapeHtml(t.driver)}</span><span class="hi-primary">${fmtNum(t.dist)} km</span></div><div class="hi-meta">${fmtDate(t.date)} · Fuel: ${num(t.fuelUsed).toFixed(1)} L · ${num(t.dist) && num(t.fuelUsed) ? (num(t.dist)/num(t.fuelUsed)).toFixed(1) : State.avgKmL.toFixed(1)} km/L</div><div class="hi-mileage">${fmtNum(t.startMileage)} to ${fmtNum(t.endMileage)} km</div></div></div>`;
+    const notes = this.tripNotes(t);
+    return `<div class="history-item"><div class="history-item-icon"><svg><use href="#ic-route"/></svg></div><div class="history-item-body"><div class="hi-top"><span class="hi-driver">${escapeHtml(t.driver)}</span><span class="hi-primary">${fmtNum(t.dist)} km</span></div><div class="hi-meta">${fmtDate(t.date)} · Fuel: ${num(t.fuelUsed).toFixed(1)} L · ${num(t.dist) && num(t.fuelUsed) ? (num(t.dist)/num(t.fuelUsed)).toFixed(1) : State.avgKmL.toFixed(1)} km/L</div><div class="hi-mileage">${fmtNum(t.startMileage)} to ${fmtNum(t.endMileage)} km</div>${notes}</div></div>`;
+  },
+  tripNotes(t) {
+    const startNote = String(t.startNote || '').trim();
+    const endNote = String(t.endNote || '').trim();
+    if (!startNote && !endNote) return '';
+    return `<div class="history-notes">${startNote ? `<div class="history-note"><div class="history-note-label">Start Note</div><div class="history-note-text">${escapeHtml(startNote)}</div></div>` : ''}${endNote ? `<div class="history-note"><div class="history-note-label">End Note</div><div class="history-note-text">${escapeHtml(endNote)}</div></div>` : ''}</div>`;
   },
   fuelItem(f) {
     return `<div class="history-item"><div class="history-item-icon"><svg><use href="#ic-fuel"/></svg></div><div class="history-item-body"><div class="hi-top"><span class="hi-driver">${escapeHtml(f.driver)}</span><span class="hi-primary">${num(f.aed).toFixed(0)} AED</span></div><div class="hi-meta">${fmtDate(f.date)} · ${num(f.liters).toFixed(1)} L @ ${num(f.price).toFixed(2)} AED/L${f.capped ? ' · capped' : ''}</div><div class="hi-mileage">${fmtNum(f.mileage)} km · Remaining ${num(f.remaining).toFixed(1)} L</div></div></div>`;
@@ -621,6 +634,18 @@ function showError(id) { byId(id)?.classList.add('show'); }
 function hideError(id) { byId(id)?.classList.remove('show'); }
 function showModal(id) { byId(id)?.classList.add('show'); }
 function hideModal(id) { byId(id)?.classList.remove('show'); }
+function sanitizeNote(value) {
+  return String(value || '').trim().slice(0, 500);
+}
+function updateNoteCounter(textareaId, counterId) {
+  const textarea = byId(textareaId);
+  const counter = byId(counterId);
+  if (!textarea || !counter) return;
+  if (textarea.value.length > 500) textarea.value = textarea.value.slice(0, 500);
+  counter.textContent = `${textarea.value.length} / 500`;
+  textarea.style.height = 'auto';
+  textarea.style.height = `${Math.max(92, textarea.scrollHeight || 92)}px`;
+}
 function bindClick(id, handler) {
   const el = byId(id);
   if (!el) { console.error(`[HiluxFleet] Missing element #${id}`); return; }
@@ -637,7 +662,7 @@ function validateMileage(value, min=0) {
 function startTrip() {
   const mileage = validateMileage(byId('start-mileage-input').value, State.currentMileage);
   if (mileage === null) { showError('start-mileage-error'); return; }
-  State.activeTrip = { driver:State.driver, startMileage:mileage, startTime:new Date().toISOString() };
+  State.activeTrip = { driver:State.driver, startMileage:mileage, startTime:new Date().toISOString(), startNote:sanitizeNote(byId('start-trip-note').value) };
   State.currentMileage = mileage;
   Storage.save();
   showToast('Trip started', 'success');
@@ -647,7 +672,7 @@ function endTrip() {
   const start = State.activeTrip?.startMileage ?? 0;
   const end = validateMileage(byId('end-mileage-input').value, start);
   if (end === null) { showError('end-mileage-error'); return; }
-  const entry = FuelEngine.completeTrip(end);
+  const entry = FuelEngine.completeTrip(end, byId('end-trip-note').value);
   Storage.save();
   Sync.enqueue('trip', entry);
   showToast(`Trip saved - ${fmtNum(entry.dist)} km`, 'success');
@@ -679,12 +704,12 @@ function exportCSV(all=false) {
   safe('Export CSV', () => {
     const stamp = new Date().toISOString().slice(0,10);
     if (all) {
-      const headers = ['Type','Date','Driver','Start Mileage','End Mileage','Distance Km','Fuel Used L','AED','Liters','Mileage','Remaining L'];
-      const tripRows = State.tripLog.map(t => ['Trip',fmtDate(t.date),t.driver,t.startMileage,t.endMileage,t.dist,t.fuelUsed,'','','',t.remaining]);
-      const fuelRows = State.fuelLog.map(f => ['Fuel',fmtDate(f.date),f.driver,'','','','',f.aed,f.liters,f.mileage,f.remaining]);
+      const headers = ['Type','Date','Driver','Start Mileage','End Mileage','Distance Km','Fuel Used L','AED','Liters','Mileage','Remaining L','Start Note','End Note'];
+      const tripRows = State.tripLog.map(t => ['Trip',fmtDate(t.date),t.driver,t.startMileage,t.endMileage,t.dist,t.fuelUsed,'','','',t.remaining,t.startNote || '',t.endNote || '']);
+      const fuelRows = State.fuelLog.map(f => ['Fuel',fmtDate(f.date),f.driver,'','','','',f.aed,f.liters,f.mileage,f.remaining,'','']);
       exportRows(`hilux_all_${stamp}.csv`, headers, [...tripRows, ...fuelRows]);
     } else if (State.historyTab === 'trips') {
-      exportRows(`hilux_trips_${stamp}.csv`, ['Date','Driver','Start Mileage','End Mileage','Distance Km','Fuel Used L','Remaining L'], State.tripLog.map(t => [fmtDate(t.date),t.driver,t.startMileage,t.endMileage,t.dist,t.fuelUsed,t.remaining]));
+      exportRows(`hilux_trips_${stamp}.csv`, ['Date','Driver','Start Mileage','End Mileage','Distance Km','Fuel Used L','Remaining L','Start Note','End Note'], State.tripLog.map(t => [fmtDate(t.date),t.driver,t.startMileage,t.endMileage,t.dist,t.fuelUsed,t.remaining,t.startNote || '',t.endNote || '']));
     } else {
       exportRows(`hilux_fuel_${stamp}.csv`, ['Date','Driver','AED','Price','Liters','Mileage','Remaining L','Capped'], State.fuelLog.map(f => [fmtDate(f.date),f.driver,f.aed,f.price,f.liters,f.mileage,f.remaining,f.capped ? 'Yes' : 'No']));
     }
@@ -754,6 +779,8 @@ function bindEvents() {
   bindClick('btn-dismiss-install', () => byId('install-banner').classList.remove('visible'));
   byId('fuel-aed-input').addEventListener('input', () => safe('Fuel preview', () => UI.updateFuelPreview()));
   byId('end-mileage-input').addEventListener('input', () => safe('Trip preview', () => UI.updateEndPreview()));
+  byId('start-trip-note').addEventListener('input', () => safe('Start note counter', () => updateNoteCounter('start-trip-note', 'start-note-counter')));
+  byId('end-trip-note').addEventListener('input', () => safe('End note counter', () => updateNoteCounter('end-trip-note', 'end-note-counter')));
   byId('filter-driver').addEventListener('change', () => UI.renderHistory());
   byId('filter-date').addEventListener('change', () => UI.renderHistory());
   $$('[data-back]').forEach(btn => btn.addEventListener('click', () => UI.goto(btn.dataset.back)));
@@ -766,7 +793,7 @@ function bindEvents() {
 function auditRuntime() {
   safe('Runtime audit', () => {
     const ids = new Set($$('[id]').map(el => el.id));
-    const expected = ['driver-select','btn-welcome-continue','conn-pill','conn-label','btn-goto-settings','dash-avatar','dash-driver-name','btn-change-driver','active-trip-card','atp-driver','atp-time','atp-mileage','atp-duration','btn-end-drive-dash','stat-mileage','stat-fuel','fuel-fill','stat-range','stat-kmL','stat-last-drive','stat-last-fuel','actions-no-trip','btn-start-drive','btn-add-fuel','actions-in-trip','btn-end-drive-action','btn-add-fuel-trip','btn-goto-history','btn-goto-settings-card','start-driver-badge','start-last-mileage','btn-use-last-mileage','start-mileage-input','btn-start-trip','end-driver-shown','end-start-mileage','calc-distance','calc-fuel-used','end-mileage-input','btn-end-trip','fuel-price-display','fuel-current-shown','fuel-aed-input','fuel-liters-preview','tank-warning','fuel-mileage-input','btn-confirm-fuel','btn-export-csv','tab-trips','tab-fuel','history-summary','filter-driver','filter-date','btn-clear-filters','history-list','row-fuel-price','edit-fuel-price-row','input-fuel-price','btn-save-fuel-price','btn-cancel-fuel-price','row-add-driver','driver-edit-panel','driver-list-items','input-new-driver','btn-add-driver','btn-sync-now','pending-count-desc','btn-export-all','btn-reset-data','modal-trip-warning','modal-go-end-trip','modal-cancel-driver','modal-reset','modal-confirm-reset','modal-cancel-reset','toast','install-banner','btn-install','btn-dismiss-install'];
+    const expected = ['driver-select','btn-welcome-continue','conn-pill','conn-label','btn-goto-settings','dash-avatar','dash-driver-name','btn-change-driver','active-trip-card','atp-driver','atp-time','atp-mileage','atp-duration','btn-end-drive-dash','stat-mileage','stat-fuel','fuel-fill','stat-range','stat-kmL','stat-last-drive','stat-last-fuel','actions-no-trip','btn-start-drive','btn-add-fuel','actions-in-trip','btn-end-drive-action','btn-add-fuel-trip','btn-goto-history','btn-goto-settings-card','start-driver-badge','start-last-mileage','btn-use-last-mileage','start-mileage-input','start-trip-note','start-note-counter','btn-start-trip','end-driver-shown','end-start-mileage','calc-distance','calc-fuel-used','end-mileage-input','end-trip-note','end-note-counter','btn-end-trip','fuel-price-display','fuel-current-shown','fuel-aed-input','fuel-liters-preview','tank-warning','fuel-mileage-input','btn-confirm-fuel','btn-export-csv','tab-trips','tab-fuel','history-summary','filter-driver','filter-date','btn-clear-filters','history-list','row-fuel-price','edit-fuel-price-row','input-fuel-price','btn-save-fuel-price','btn-cancel-fuel-price','row-add-driver','driver-edit-panel','driver-list-items','input-new-driver','btn-add-driver','btn-sync-now','pending-count-desc','btn-export-all','btn-reset-data','modal-trip-warning','modal-go-end-trip','modal-cancel-driver','modal-reset','modal-confirm-reset','modal-cancel-reset','toast','install-banner','btn-install','btn-dismiss-install'];
     const missing = expected.filter(id => !ids.has(id));
     if (missing.length) console.error('[HiluxFleet] Missing IDs', missing);
     else log('All expected IDs found');
