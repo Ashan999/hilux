@@ -216,6 +216,7 @@ const CONFIG = {
   DEFAULT_DRIVERS:['Ahmed','Ali','Kumar','Ashan'],
   GAS_URL:'https://script.google.com/macros/s/AKfycbx6JHuD5GrLQzX0AWw9N3Y9k2q_6N3hd3ijj1iiak2P8GzznK3iRwApl2w7UPrS1ijg/exec'
 };
+  
 const DEBUG = new URLSearchParams(location.search).has('debug') || localStorage.getItem('hilux_debug') === '1';
 const log = (...args) => { if (DEBUG) console.log('[HiluxFleet]', ...args); };
 const warn = (...args) => { if (DEBUG) console.warn('[HiluxFleet]', ...args); };
