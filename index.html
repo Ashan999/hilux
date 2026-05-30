@@ -353,13 +353,103 @@ const Sync = {
     Storage.save();
     log('queued sync', record);
     this.flushPending();
-  },
-  async send(record) {
-    const action = record.type === 'fuel' ? 'addFuel' : 'addTrip';
-    const response = await fetch(CONFIG.GAS_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({ action, data:record.data }) });
-    const json = await response.json().catch(() => ({}));
-    if (!response.ok || json.ok === false) throw new Error(json.error || `HTTP ${response.status}`);
-    return json;
+  },async send(record) {
+
+  const action = record.type === 'fuel'
+    ? 'addFuel'
+    : 'addTrip';
+
+  return new Promise((resolve, reject) => {
+
+    const callbackName =
+      'hiluxSync_' +
+      Date.now() +
+      '_' +
+      Math.random().toString(16).slice(2);
+
+    const timeoutMs = 15000;
+
+    let script;
+
+    const cleanup = () => {
+
+      try {
+        delete window[callbackName];
+      } catch(e) {}
+
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      clearTimeout(timer);
+    };
+
+    window[callbackName] = (response) => {
+
+      cleanup();
+
+      if (response && response.ok) {
+        resolve(response);
+      } else {
+        reject(
+          new Error(
+            response?.error ||
+            'Google Apps Script sync failed'
+          )
+        );
+      }
+    };
+
+    const url = new URL(CONFIG.GAS_URL);
+
+    url.searchParams.set(
+      'action',
+      action
+    );
+
+    url.searchParams.set(
+      'data',
+      JSON.stringify(record.data)
+    );
+
+    url.searchParams.set(
+      'callback',
+      callbackName
+    );
+
+    script = document.createElement('script');
+
+    script.src = url.toString();
+
+    script.async = true;
+
+    script.onerror = () => {
+
+      cleanup();
+
+      reject(
+        new Error(
+          'Google Apps Script JSONP request failed'
+        )
+      );
+    };
+
+    const timer = setTimeout(() => {
+
+      cleanup();
+
+      reject(
+        new Error(
+          'Google Apps Script request timeout'
+        )
+      );
+
+    }, timeoutMs);
+
+    document.body.appendChild(script);
+
+  });
+}
   },
   async flushPending() {
     if (!this.canSend() || !State.pendingSync.length) { UI.renderSyncStatus(); return; }
