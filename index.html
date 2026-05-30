@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#00BCD4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HiluxFleet">
+  <meta name="description" content="Toyota Hilux Fleet Manager - fuel, trips, mileage tracking">
+  <title>Hilux Fleet Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+  <link id="manifest-link" rel="manifest">
+  <link id="favicon-link" rel="icon">
+  <link id="apple-icon-link" rel="apple-touch-icon">
+  <style>
+    :root {
+      --cyan:#00BCD4; --cyan-dark:#0097A7; --cyan-glow:rgba(0,188,212,.30); --cyan-subtle:rgba(0,188,212,.08);
+      --amber:#FFB300; --amber-dim:rgba(255,179,0,.15); --green:#4CAF50; --green-dim:rgba(76,175,80,.15);
+      --red:#EF5350; --red-dim:rgba(239,83,80,.15); --bg:#080E1C; --bg2:#0C1526; --bg3:#111D33;
+      --surface:rgba(255,255,255,.035); --surface-2:rgba(255,255,255,.06); --border:rgba(0,188,212,.14);
+      --border-2:rgba(255,255,255,.08); --text:#E2EAF4; --text-2:#8FA8C8; --text-3:#4D6480;
+      --r:16px; --r-sm:10px; --r-xs:7px; --shadow:0 8px 40px rgba(0,0,0,.55);
+      --shadow-cyan:0 4px 20px rgba(0,188,212,.22); --ff-head:'Rajdhani',sans-serif; --ff-body:'DM Sans',sans-serif;
+      --ease:cubic-bezier(.4,0,.2,1); --dur:.22s;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html{font-size:16px;-webkit-text-size-adjust:100%}
+    body{font-family:var(--ff-body);background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 50% -10%,rgba(0,188,212,.10),transparent 65%),radial-gradient(ellipse 40% 30% at 90% 90%,rgba(0,151,167,.07),transparent 60%);pointer-events:none;z-index:0}
+    #app{position:relative;z-index:1;max-width:480px;margin:0 auto;min-height:100dvh}
+    .screen{display:none;flex-direction:column;min-height:100dvh}.screen.active{display:flex;animation:fadeUp var(--dur) var(--ease) both}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+    .topbar{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;background:linear-gradient(180deg,rgba(8,14,28,.92),transparent);backdrop-filter:blur(14px);position:sticky;top:0;z-index:50}
+    .topbar-icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:38px;height:38px;display:grid;place-items:center;cursor:pointer;color:var(--cyan);flex-shrink:0}
+    .topbar-icon-btn:hover{background:var(--cyan-subtle);box-shadow:var(--shadow-cyan)}svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .topbar-title{font-family:var(--ff-head);font-size:1.15rem;font-weight:700;flex:1}
+    .conn-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;border:1px solid;white-space:nowrap}
+    .conn-pill.online{background:var(--green-dim);border-color:rgba(76,175,80,.3);color:#81C784}.conn-pill.offline{background:var(--red-dim);border-color:rgba(239,83,80,.3);color:#EF9A9A}.conn-pill.pending{background:var(--amber-dim);border-color:rgba(255,179,0,.3);color:#FFD54F}
+    .conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor}.conn-pill.online .conn-dot,.active-dot,.vehicle-status-dot{animation:blink 2s ease-in-out infinite}@keyframes blink{50%{opacity:.4}}
+    .scroll-body{flex:1;overflow-y:auto;padding:8px 16px 110px;-webkit-overflow-scrolling:touch}.label{font-size:.68rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--text-3)}
+    .section-head{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2);margin:20px 0 10px}
+    .card,.stat-card,.settings-row,.action-card,.summary-chip{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);backdrop-filter:blur(6px)}
+    .input-wrap{display:flex;flex-direction:column;gap:7px}.input-field{background:var(--surface-2);border:1.5px solid var(--border-2);border-radius:var(--r-sm);padding:13px 14px;color:var(--text);font:inherit;width:100%;outline:none}.input-field:focus{border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan-glow);background:var(--cyan-subtle)}.input-field option{background:var(--bg2);color:var(--text)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;border-radius:var(--r-sm);padding:14px 22px;font-family:var(--ff-head);font-size:1rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:all var(--dur);user-select:none}.btn:active,.action-card:active{transform:scale(.97)}.btn svg{width:17px;height:17px;stroke-width:2}.btn-primary{background:linear-gradient(135deg,var(--cyan),var(--cyan-dark));color:#000;box-shadow:var(--shadow-cyan)}.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}.btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text-2)}.btn-danger{background:var(--red-dim);border:1.5px solid rgba(239,83,80,.35);color:var(--red)}.btn-full{width:100%}.btn-sm{padding:9px 16px;font-size:.82rem}
+    .field-error{font-size:.76rem;color:var(--red);margin-top:4px;display:none}.field-error.show{display:block}
+    #screen-welcome{justify-content:center;align-items:center;padding:40px 24px;gap:36px}.welcome-brand{text-align:center}.brand-logo{width:94px;height:94px;margin:0 auto 20px;position:relative}.brand-logo svg{width:94px;height:94px}.brand-tagline{font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);font-weight:700;margin-bottom:10px}.brand-name{font-family:var(--ff-head);font-size:1.85rem;font-weight:700;line-height:1.1}.brand-sub{font-size:.82rem;color:var(--text-2);margin-top:8px}.welcome-form{width:100%;display:flex;flex-direction:column;gap:14px}
+    .dash-head{padding:12px 16px 0}.dash-driver-bar{display:flex;align-items:center;gap:12px;margin-bottom:14px}.driver-avatar{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--cyan-dark));display:grid;place-items:center;font-family:var(--ff-head);font-size:1.1rem;font-weight:700;color:#000;box-shadow:0 0 16px var(--cyan-glow)}.driver-meta{flex:1;min-width:0}.driver-name-text{font-family:var(--ff-head);font-size:1.05rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.driver-role-text{font-size:.75rem;color:var(--text-2)}
+    .vehicle-hero{background:linear-gradient(135deg,rgba(0,188,212,.10),rgba(0,151,167,.04));border:1px solid rgba(0,188,212,.22);border-radius:var(--r);padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:14px}.vehicle-hero-icon,.action-icon,.stat-icon-wrap,.settings-row-icon,.history-item-icon,.empty-icon{background:var(--cyan-subtle);border:1px solid var(--border);display:grid;place-items:center;flex-shrink:0}.vehicle-hero-icon{width:44px;height:44px;border-radius:12px}.vehicle-hero-icon svg{width:24px;height:24px;color:var(--cyan)}.vehicle-hero-info{flex:1}.vehicle-hero-name{font-family:var(--ff-head);font-size:1.1rem;font-weight:700}.vehicle-hero-detail{font-size:.77rem;color:var(--text-2)}.vehicle-status-dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.stat-card{padding:14px;position:relative;overflow:hidden}.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),transparent);opacity:.5}.stat-icon-wrap{width:30px;height:30px;border-radius:8px;margin-bottom:10px}.stat-icon-wrap svg{width:16px;height:16px;color:var(--cyan)}.stat-lbl{font-size:.65rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:3px}.stat-val{font-family:var(--ff-head);font-size:1.55rem;font-weight:700;line-height:1}.stat-unit{font-size:.7rem;color:var(--text-2);margin-top:2px}.c-cyan{color:var(--cyan)}.c-amber{color:var(--amber)}.c-green{color:var(--green)}.c-white{color:var(--text)}.fuel-progress{background:var(--surface-2);border-radius:3px;height:3px;margin-top:7px;overflow:hidden}.fuel-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--cyan));transition:width .8s var(--ease)}
+    .active-trip-card{background:linear-gradient(135deg,rgba(76,175,80,.10),rgba(0,188,212,.06));border:1px solid rgba(76,175,80,.30);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;display:none}.active-trip-card.visible{display:block}.active-trip-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}.active-badge{display:flex;align-items:center;gap:5px;background:rgba(76,175,80,.2);border:1px solid rgba(76,175,80,.4);border-radius:20px;padding:3px 10px;font-size:.67rem;font-weight:700;text-transform:uppercase;color:#81C784}.active-dot{width:6px;height:6px;border-radius:50%;background:#81C784}.active-trip-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.atp-label{font-size:.65rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em}.atp-value{font-family:var(--ff-head);font-size:1rem;font-weight:700;color:var(--text)}
+    .action-row{display:grid;gap:10px;margin-bottom:10px}.cols-2{grid-template-columns:1fr 1fr}.action-card{padding:16px 10px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}.action-card:hover{border-color:var(--cyan);background:var(--cyan-subtle);transform:translateY(-2px);box-shadow:var(--shadow-cyan)}.action-icon{width:38px;height:38px;border-radius:10px}.action-icon svg{width:19px;height:19px;color:var(--cyan)}.action-label{font-family:var(--ff-head);font-size:.77rem;font-weight:700;text-transform:uppercase;color:var(--text-2)}
+    .mileage-hero{background:linear-gradient(135deg,rgba(0,188,212,.09),rgba(0,151,167,.04));border:1px solid rgba(0,188,212,.2);border-radius:var(--r);padding:28px 24px;text-align:center;margin:12px 0 16px}.mileage-hero-label{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);margin-bottom:8px}.mileage-hero-num{font-family:var(--ff-head);font-size:2.8rem;font-weight:700;color:var(--cyan);line-height:1}.mileage-hero-unit{font-size:.9rem;color:var(--text-2);margin-top:6px}.calc-row{display:flex;gap:10px;margin-bottom:16px}.calc-row .stat-card{flex:1}.fuel-info-bar{display:flex;align-items:center;gap:10px;background:var(--amber-dim);border:1px solid rgba(255,179,0,.28);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:16px}.fuel-info-bar svg{width:16px;height:16px;color:var(--amber)}.fuel-info-text{font-size:.8rem;color:var(--amber);font-weight:500}.calc-box{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin:10px 0}.calc-box-label{font-size:.8rem;color:var(--text-2)}.calc-box-value{font-family:var(--ff-head);font-size:1.35rem;font-weight:700;color:var(--cyan)}.tank-warning{display:none;align-items:center;gap:8px;background:var(--red-dim);border:1px solid rgba(239,83,80,.3);border-radius:var(--r-xs);padding:9px 13px;font-size:.8rem;color:var(--red);margin-top:8px}.tank-warning.show{display:flex}
+    .tab-bar{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px;margin-bottom:14px}.tab-btn{flex:1;padding:8px 10px;background:transparent;border:none;border-radius:7px;color:var(--text-2);font-family:var(--ff-head);font-size:.8rem;font-weight:700;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}.tab-btn.active{background:linear-gradient(135deg,var(--cyan),var(--cyan-dark));color:#000}.summary-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.summary-chip{flex:1;min-width:0;padding:10px 12px;text-align:center}.chip-lbl{font-size:.62rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em}.chip-val{font-family:var(--ff-head);font-size:1.05rem;font-weight:700;color:var(--cyan)}.filter-row{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;margin-bottom:14px}.filter-row .input-field{padding:9px 11px;font-size:.83rem}.history-list{display:flex;flex-direction:column;gap:8px}.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:13px 14px;display:flex;gap:12px;align-items:flex-start}.history-item-icon{width:34px;height:34px;border-radius:8px}.history-item-icon svg{width:17px;height:17px;color:var(--cyan)}.history-item-body{flex:1;min-width:0}.hi-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.hi-driver{font-weight:500;font-size:.88rem}.hi-primary{font-family:var(--ff-head);font-size:1rem;font-weight:700;color:var(--cyan)}.hi-meta{font-size:.73rem;color:var(--text-2);margin-top:2px}.hi-mileage{font-size:.72rem;color:var(--text-3);margin-top:2px}
+    .settings-section{margin-bottom:20px}.settings-row{align-items:center;gap:12px;border-radius:var(--r-sm);padding:14px 16px;cursor:pointer;margin-bottom:6px;display:flex}.settings-row:hover{border-color:var(--cyan);background:var(--cyan-subtle)}.settings-row-icon{width:32px;height:32px;border-radius:8px}.settings-row-icon svg{width:16px;height:16px;color:var(--cyan)}.settings-row-body{flex:1}.settings-row-title{font-weight:500;font-size:.9rem}.settings-row-desc{font-size:.75rem;color:var(--text-2);margin-top:1px}.settings-row-value{font-family:var(--ff-head);font-size:.9rem;font-weight:700;color:var(--cyan);white-space:nowrap}.settings-edit-row{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:6px;display:none}.settings-edit-row.show{display:block}.settings-edit-inner{display:flex;gap:8px;align-items:center}.settings-edit-inner .input-field{flex:1;padding:9px 12px}
+    .modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(5,10,20,.80);backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center;padding:0 16px 24px}.modal-overlay.show{display:flex}.modal-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:24px;width:100%;max-width:448px;box-shadow:var(--shadow)}.modal-title{font-family:var(--ff-head);font-size:1.1rem;font-weight:700;margin-bottom:8px}.modal-body{font-size:.88rem;color:var(--text-2);margin-bottom:20px;line-height:1.5}.modal-actions{display:flex;gap:8px;flex-direction:column}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(11,19,35,.96);border:1px solid var(--border);border-radius:24px;padding:11px 22px;font-size:.85rem;font-weight:500;color:var(--text);white-space:nowrap;max-width:90vw;text-align:center;z-index:999;box-shadow:var(--shadow);transition:transform .3s,opacity .3s}.toast.show{transform:translateX(-50%) translateY(0)}.toast.success{border-color:rgba(76,175,80,.40)}.toast.error{border-color:rgba(239,83,80,.40)}.toast.warning{border-color:rgba(255,179,0,.40)}
+    #install-banner{position:fixed;bottom:18px;left:16px;right:16px;background:rgba(11,19,35,.96);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;z-index:200;box-shadow:var(--shadow);display:none;flex-direction:column;gap:12px;max-width:448px;margin:0 auto}#install-banner.visible{display:flex}.install-text{font-size:.82rem;color:var(--text-2)}.install-text strong{display:block;font-size:.95rem;color:var(--text);margin-bottom:2px}.install-actions{display:flex;gap:8px}.install-actions .btn{padding:9px 16px;font-size:.82rem}.empty-state{text-align:center;padding:48px 20px}.empty-icon{width:56px;height:56px;border-radius:16px;margin:0 auto 16px}.empty-icon svg{width:26px;height:26px;color:var(--text-3)}.empty-title{font-family:var(--ff-head);font-size:1rem;font-weight:700;color:var(--text-2);margin-bottom:6px}.empty-sub{font-size:.82rem;color:var(--text-3)}.sp{height:10px}.sp-lg{height:20px}.hidden{display:none!important}
+    @media(max-height:700px){.brand-logo{width:74px;height:74px}.brand-logo svg{width:74px;height:74px}.brand-name{font-size:1.5rem}#screen-welcome{gap:24px}}@media(min-width:480px){#app{border-left:1px solid var(--border);border-right:1px solid var(--border)}}
+  </style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="ic-car" viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></symbol>
+  <symbol id="ic-fuel" viewBox="0 0 24 24"><path d="M3 22V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v18"/><path d="M3 22h12"/><path d="M17 9l2 2v5a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.9a2 2 0 0 0-.6-1.4L21 7"/><path d="M7 8h6"/></symbol>
+  <symbol id="ic-route" viewBox="0 0 24 24"><path d="M3 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0"/><path d="M17 5a2 2 0 1 0 4 0 2 2 0 0 0-4 0"/><path d="M5 17V7l14-2v12"/></symbol>
+  <symbol id="ic-history" viewBox="0 0 24 24"><path d="M2 12a10 10 0 1 0 10-10"/><path d="M2 6v6h6"/><path d="M12 7v5l3 3"/></symbol>
+  <symbol id="ic-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.18V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 7.18 19.6l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.09 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.4 7.18l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 10 3.09V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.26l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.91 10H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="ic-chart" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+  <symbol id="ic-alert" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ic-arrow-l" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></symbol>
+  <symbol id="ic-arrow-r" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
+  <symbol id="ic-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="ic-sync" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+  <symbol id="ic-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+  <symbol id="ic-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></symbol>
+  <symbol id="ic-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="ic-plus-user" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></symbol>
+</svg>
+
+<div id="app">
+  <div id="screen-welcome" class="screen">
+    <div class="welcome-brand">
+      <div class="brand-logo" id="brand-logo"></div>
+      <div class="brand-tagline">Toyota · UAE Fleet</div>
+      <div class="brand-name">Hilux Vehicle<br>Manager</div>
+      <div class="brand-sub">Intelligent fuel tracking &amp; trip management</div>
+    </div>
+    <div class="welcome-form">
+      <div class="input-wrap">
+        <label class="label" for="driver-select">Select Driver</label>
+        <select id="driver-select" class="input-field"><option value="">Choose Driver</option></select>
+        <div class="field-error" id="driver-error">Please select a driver to continue.</div>
+      </div>
+      <button id="btn-welcome-continue" class="btn btn-primary btn-full"><svg><use href="#ic-arrow-r"/></svg>Continue</button>
+    </div>
+  </div>
+
+  <div id="screen-dashboard" class="screen">
+    <div class="topbar">
+      <div class="topbar-title">Fleet Dashboard</div>
+      <div id="conn-pill" class="conn-pill offline"><div class="conn-dot"></div><span id="conn-label">Offline</span></div>
+      <button class="topbar-icon-btn" id="btn-goto-settings" aria-label="Settings"><svg><use href="#ic-settings"/></svg></button>
+    </div>
+    <div class="scroll-body">
+      <div class="dash-head">
+        <div class="dash-driver-bar">
+          <div class="driver-avatar" id="dash-avatar">?</div>
+          <div class="driver-meta"><div class="driver-name-text" id="dash-driver-name">Driver</div><div class="driver-role-text">Active Driver · Toyota Hilux</div></div>
+          <button class="btn btn-ghost btn-sm" id="btn-change-driver">Change</button>
+        </div>
+        <div class="vehicle-hero"><div class="vehicle-hero-icon"><svg><use href="#ic-car"/></svg></div><div class="vehicle-hero-info"><div class="vehicle-hero-name">Toyota Hilux</div><div class="vehicle-hero-detail">Petrol · 80L Tank · Single Unit</div></div><div class="vehicle-status-dot"></div></div>
+      </div>
+      <div id="active-trip-card" class="active-trip-card">
+        <div class="active-trip-header"><div class="active-badge"><div class="active-dot"></div>Active Trip</div></div>
+        <div class="active-trip-meta">
+          <div class="atp-item"><div class="atp-label">Driver</div><div class="atp-value" id="atp-driver">-</div></div>
+          <div class="atp-item"><div class="atp-label">Started</div><div class="atp-value" id="atp-time">-</div></div>
+          <div class="atp-item"><div class="atp-label">Start Mileage</div><div class="atp-value" id="atp-mileage">-</div></div>
+          <div class="atp-item"><div class="atp-label">Duration</div><div class="atp-value" id="atp-duration">-</div></div>
+        </div>
+        <button class="btn btn-danger btn-full" id="btn-end-drive-dash"><svg><use href="#ic-flag"/></svg>End Drive</button>
+      </div>
+      <div class="section-head">Vehicle Status</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon-wrap"><svg><use href="#ic-pin"/></svg></div><div class="stat-lbl">Current Mileage</div><div class="stat-val c-cyan" id="stat-mileage">0</div><div class="stat-unit">km</div></div>
+        <div class="stat-card"><div class="stat-icon-wrap"><svg><use href="#ic-fuel"/></svg></div><div class="stat-lbl">Fuel Balance</div><div class="stat-val c-amber" id="stat-fuel">0.0</div><div class="stat-unit">liters remaining</div><div class="fuel-progress"><div class="fuel-fill" id="fuel-fill" style="width:0%"></div></div></div>
+        <div class="stat-card"><div class="stat-icon-wrap"><svg><use href="#ic-route"/></svg></div><div class="stat-lbl">Est. Range</div><div class="stat-val c-green" id="stat-range">0</div><div class="stat-unit">km</div></div>
+        <div class="stat-card"><div class="stat-icon-wrap"><svg><use href="#ic-chart"/></svg></div><div class="stat-lbl">Efficiency</div><div class="stat-val c-white" id="stat-kmL">9.0</div><div class="stat-unit">km / liter (avg)</div></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon-wrap"><svg><use href="#ic-clock"/></svg></div><div class="stat-lbl">Last Drive</div><div style="font-size:.85rem;color:var(--text);font-weight:500;margin-top:4px" id="stat-last-drive">-</div></div>
+        <div class="stat-card"><div class="stat-icon-wrap"><svg><use href="#ic-fuel"/></svg></div><div class="stat-lbl">Last Fuel</div><div style="font-size:.85rem;color:var(--text);font-weight:500;margin-top:4px" id="stat-last-fuel">-</div></div>
+      </div>
+      <div class="section-head">Quick Actions</div>
+      <div class="action-row cols-2" id="actions-no-trip">
+        <div class="action-card" id="btn-start-drive" role="button" tabindex="0"><div class="action-icon"><svg><use href="#ic-car"/></svg></div><div class="action-label">Start Drive</div></div>
+        <div class="action-card" id="btn-add-fuel" role="button" tabindex="0"><div class="action-icon"><svg><use href="#ic-fuel"/></svg></div><div class="action-label">Add Fuel</div></div>
+      </div>
+      <div class="action-row cols-2" id="actions-in-trip" style="display:none">
+        <div class="action-card" id="btn-end-drive-action" role="button" tabindex="0"><div class="action-icon" style="background:var(--red-dim);border-color:rgba(239,83,80,.3)"><svg style="color:var(--red)"><use href="#ic-flag"/></svg></div><div class="action-label" style="color:var(--red)">End Drive</div></div>
+        <div class="action-card" id="btn-add-fuel-trip" role="button" tabindex="0"><div class="action-icon"><svg><use href="#ic-fuel"/></svg></div><div class="action-label">Add Fuel</div></div>
+      </div>
+      <div class="action-row cols-2" style="margin-top:10px">
+        <div class="action-card" id="btn-goto-history" role="button" tabindex="0"><div class="action-icon"><svg><use href="#ic-history"/></svg></div><div class="action-label">History</div></div>
+        <div class="action-card" id="btn-goto-settings-card" role="button" tabindex="0"><div class="action-icon"><svg><use href="#ic-settings"/></svg></div><div class="action-label">Settings</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-start-drive" class="screen">
+    <div class="topbar"><button class="topbar-icon-btn" data-back="dashboard" aria-label="Back"><svg><use href="#ic-arrow-l"/></svg></button><div class="topbar-title">Start Drive</div><div class="conn-pill online" style="font-size:.68rem;padding:3px 9px"><div class="conn-dot"></div><span id="start-driver-badge">Driver</span></div></div>
+    <div class="scroll-body"><div class="mileage-hero"><div class="mileage-hero-label">Last Recorded Mileage</div><div class="mileage-hero-num" id="start-last-mileage">0</div><div class="mileage-hero-unit">km</div></div><button id="btn-use-last-mileage" class="btn btn-outline btn-full" style="margin-bottom:12px">Use Last Mileage</button><div class="input-wrap"><label class="label" for="start-mileage-input">Current Odometer Reading (km)</label><input id="start-mileage-input" class="input-field" type="number" inputmode="numeric" placeholder="e.g. 152350" min="0"><div class="field-error" id="start-mileage-error">Please enter a valid mileage.</div></div><div class="sp-lg"></div><button id="btn-start-trip" class="btn btn-primary btn-full"><svg><use href="#ic-car"/></svg>Start Trip</button></div>
+  </div>
+
+  <div id="screen-end-drive" class="screen">
+    <div class="topbar"><button class="topbar-icon-btn" data-back="dashboard" aria-label="Back"><svg><use href="#ic-arrow-l"/></svg></button><div class="topbar-title">End Drive</div></div>
+    <div class="scroll-body"><div class="calc-row"><div class="stat-card"><div class="stat-lbl">Driver</div><div class="stat-val c-white" style="font-size:1.1rem" id="end-driver-shown">-</div></div><div class="stat-card"><div class="stat-lbl">Start Mileage</div><div class="stat-val c-cyan" id="end-start-mileage">0</div><div class="stat-unit">km</div></div></div><div class="calc-row"><div class="stat-card"><div class="stat-lbl">Distance Travelled</div><div class="stat-val c-green" id="calc-distance">-</div><div class="stat-unit">km calculated</div></div><div class="stat-card"><div class="stat-lbl">Est. Fuel Used</div><div class="stat-val c-amber" id="calc-fuel-used">-</div><div class="stat-unit">liters</div></div></div><div class="input-wrap"><label class="label" for="end-mileage-input">Current Odometer Reading (km)</label><input id="end-mileage-input" class="input-field" type="number" inputmode="numeric" placeholder="e.g. 152800" min="0"><div class="field-error" id="end-mileage-error">End mileage must be greater than start mileage.</div></div><div class="sp-lg"></div><button id="btn-end-trip" class="btn btn-primary btn-full"><svg><use href="#ic-check"/></svg>Save Trip</button></div>
+  </div>
+
+  <div id="screen-add-fuel" class="screen">
+    <div class="topbar"><button class="topbar-icon-btn" data-back="dashboard" aria-label="Back"><svg><use href="#ic-arrow-l"/></svg></button><div class="topbar-title">Add Fuel</div></div>
+    <div class="scroll-body"><div class="fuel-info-bar"><svg><use href="#ic-fuel"/></svg><div class="fuel-info-text">Fuel price: <strong id="fuel-price-display">2.70 AED/L</strong> &nbsp;·&nbsp; Tank capacity: <strong>80 L</strong> &nbsp;·&nbsp; Current: <strong id="fuel-current-shown">0.0 L</strong></div></div><div class="input-wrap" style="margin-bottom:12px"><label class="label" for="fuel-aed-input">Amount Paid (AED)</label><input id="fuel-aed-input" class="input-field" type="number" inputmode="decimal" placeholder="e.g. 200" min="0"><div class="field-error" id="fuel-aed-error">Enter a valid AED amount greater than 0.</div></div><div class="calc-box"><span class="calc-box-label">Liters to be Added</span><span class="calc-box-value" id="fuel-liters-preview">0.00 L</span></div><div class="tank-warning" id="tank-warning"><svg><use href="#ic-alert"/></svg><span id="tank-warning-text">This entry will be capped at the 80L tank capacity.</span></div><div class="sp"></div><div class="input-wrap"><label class="label" for="fuel-mileage-input">Current Odometer Reading (km)</label><input id="fuel-mileage-input" class="input-field" type="number" inputmode="numeric" placeholder="e.g. 152350" min="0"><div class="field-error" id="fuel-mileage-error">Enter a valid mileage reading.</div></div><div class="sp-lg"></div><button id="btn-confirm-fuel" class="btn btn-primary btn-full"><svg><use href="#ic-fuel"/></svg>Confirm Fuel Entry</button></div>
+  </div>
+
+  <div id="screen-history" class="screen">
+    <div class="topbar"><button class="topbar-icon-btn" data-back="dashboard" aria-label="Back"><svg><use href="#ic-arrow-l"/></svg></button><div class="topbar-title">History</div><button class="topbar-icon-btn" id="btn-export-csv" aria-label="Export CSV"><svg><use href="#ic-download"/></svg></button></div>
+    <div class="scroll-body"><div class="tab-bar"><button class="tab-btn active" id="tab-trips"><svg><use href="#ic-route"/></svg>Trips</button><button class="tab-btn" id="tab-fuel"><svg><use href="#ic-fuel"/></svg>Fuel</button></div><div class="summary-bar" id="history-summary"></div><div class="filter-row"><select id="filter-driver" class="input-field"><option value="">All Drivers</option></select><input id="filter-date" class="input-field" type="month" placeholder="Month"><button class="btn btn-ghost btn-sm" id="btn-clear-filters">Clear</button></div><div class="history-list" id="history-list"></div></div>
+  </div>
+
+  <div id="screen-settings" class="screen">
+    <div class="topbar"><button class="topbar-icon-btn" data-back="dashboard" aria-label="Back"><svg><use href="#ic-arrow-l"/></svg></button><div class="topbar-title">Settings</div></div>
+    <div class="scroll-body">
+      <div class="section-head">Fuel Configuration</div><div class="settings-section"><div class="settings-row" id="row-fuel-price"><div class="settings-row-icon"><svg><use href="#ic-fuel"/></svg></div><div class="settings-row-body"><div class="settings-row-title">Fuel Price per Liter</div><div class="settings-row-desc">Used to calculate liters from AED amount</div></div><div class="settings-row-value" id="display-fuel-price">2.70 AED</div><div class="settings-row-chevron"><svg><use href="#ic-edit"/></svg></div></div><div class="settings-edit-row" id="edit-fuel-price-row"><div class="label" style="margin-bottom:8px">Enter new fuel price (AED/L)</div><div class="settings-edit-inner"><input id="input-fuel-price" class="input-field" type="number" inputmode="decimal" placeholder="e.g. 2.70" min="0" step="0.01"><button class="btn btn-primary btn-sm" id="btn-save-fuel-price">Save</button><button class="btn btn-ghost btn-sm" id="btn-cancel-fuel-price">Cancel</button></div></div></div>
+      <div class="section-head">Driver Management</div><div class="settings-section"><div class="settings-row" id="row-add-driver"><div class="settings-row-icon"><svg><use href="#ic-plus-user"/></svg></div><div class="settings-row-body"><div class="settings-row-title">Manage Drivers</div><div class="settings-row-desc" id="driver-count-desc">4 drivers configured</div></div><div class="settings-row-chevron"><svg><use href="#ic-arrow-r"/></svg></div></div><div class="settings-edit-row" id="driver-edit-panel"><div id="driver-list-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div><div class="settings-edit-inner"><input id="input-new-driver" class="input-field" type="text" placeholder="New driver name"><button class="btn btn-primary btn-sm" id="btn-add-driver">Add</button></div></div></div>
+      <div class="section-head">Data Management</div><div class="settings-section"><div class="settings-row" id="btn-sync-now"><div class="settings-row-icon"><svg><use href="#ic-sync"/></svg></div><div class="settings-row-body"><div class="settings-row-title">Sync Now</div><div class="settings-row-desc" id="pending-count-desc">Push pending records to Google Sheets</div></div><div class="settings-row-chevron"><svg><use href="#ic-arrow-r"/></svg></div></div><div class="settings-row" id="btn-export-all"><div class="settings-row-icon"><svg><use href="#ic-download"/></svg></div><div class="settings-row-body"><div class="settings-row-title">Export All Data</div><div class="settings-row-desc">Download complete CSV of trips and fuel log</div></div><div class="settings-row-chevron"><svg><use href="#ic-arrow-r"/></svg></div></div><div class="settings-row" id="btn-reset-data"><div class="settings-row-icon" style="background:var(--red-dim);border-color:rgba(239,83,80,.3)"><svg style="color:var(--red)"><use href="#ic-trash"/></svg></div><div class="settings-row-body"><div class="settings-row-title" style="color:var(--red)">Reset Local Data</div><div class="settings-row-desc">Clears all local records on this device</div></div><div class="settings-row-chevron"><svg><use href="#ic-arrow-r"/></svg></div></div></div>
+      <div class="section-head">About</div><div class="card" style="padding:14px 16px"><div style="font-size:.78rem;color:var(--text-2);line-height:1.7"><strong style="color:var(--text)">Toyota Hilux Fleet Manager v2.1</strong><br>Offline-first local app · Google Sheets sync queue<br>80L Petrol tank · Smart fuel learning</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-trip-warning"><div class="modal-card"><div class="modal-title">Active Trip Running</div><div class="modal-body">End the current trip before changing drivers.</div><div class="modal-actions"><button class="btn btn-danger btn-full" id="modal-go-end-trip">End Current Trip</button><button class="btn btn-ghost btn-full" id="modal-cancel-driver">Stay on Dashboard</button></div></div></div>
+<div class="modal-overlay" id="modal-reset"><div class="modal-card"><div class="modal-title">Reset All Local Data?</div><div class="modal-body">This permanently deletes local trips, fuel logs, settings, and pending sync records on this device.</div><div class="modal-actions"><button class="btn btn-danger btn-full" id="modal-confirm-reset">Yes, Reset Everything</button><button class="btn btn-ghost btn-full" id="modal-cancel-reset">Cancel</button></div></div></div>
+<div class="toast" id="toast"></div>
+<div id="install-banner"><div class="install-text"><strong>Install Fleet Manager</strong>Add to your home screen for app-like access.</div><div class="install-actions"><button id="btn-install" class="btn btn-primary">Install App</button><button id="btn-dismiss-install" class="btn btn-ghost">Later</button></div></div>
+
+<script>
+'use strict';
+
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#080E1C"/><path d="M151 74h210l104 182-104 182H151L47 256 151 74z" fill="#09AFC0"/><circle cx="256" cy="256" r="153" fill="#081123"/><circle cx="256" cy="256" r="112" fill="#111B2F"/><path d="M165 190c23-28 51-43 91-43v75h67v-75c40 0 68 15 91 43v132c-23 28-51 43-91 43v-75h-67v75c-40 0-68-15-91-43V190z" fill="#F7F7F7"/><path d="M256 147v75h67v68h-67v75c-12 0-23-1-33-4V151c10-3 21-4 33-4z" fill="#0D1729"/></svg>`;
+const LOGO_DATA_URL = 'data:image/svg+xml;base64,' + btoa(LOGO_SVG);
+document.getElementById('brand-logo').innerHTML = LOGO_SVG;
+document.getElementById('favicon-link').href = LOGO_DATA_URL;
+document.getElementById('apple-icon-link').href = LOGO_DATA_URL;
+document.getElementById('manifest-link').href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify({
+  name:'Toyota Hilux Vehicle Manager', short_name:'HiluxFleet',
+  description:'Professional company vehicle tracking - fuel, trips, mileage',
+  start_url:'./index.html', scope:'./', display:'standalone', orientation:'portrait-primary',
+  background_color:'#080E1C', theme_color:'#00BCD4',
+  icons:[{src:LOGO_DATA_URL,sizes:'192x192',type:'image/svg+xml',purpose:'any'},{src:LOGO_DATA_URL,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}],
+  categories:['productivity','utilities','business'], lang:'en-AE', dir:'ltr'
+}));
+
+const CONFIG = {
+  VEHICLE:'Toyota Hilux',
+  FUEL_TYPE:'Petrol',
+  TANK_CAPACITY:80,
+  DEFAULT_FUEL_PRICE:2.70,
+  DEFAULT_KM_L:9,
+  DEFAULT_DRIVERS:['Ahmed','Ali','Kumar','Ashan'],
+  GAS_URL:''
+};
+const DEBUG = new URLSearchParams(location.search).has('debug') || localStorage.getItem('hilux_debug') === '1';
+const log = (...args) => { if (DEBUG) console.log('[HiluxFleet]', ...args); };
+const warn = (...args) => { if (DEBUG) console.warn('[HiluxFleet]', ...args); };
+
+const State = {
+  driver:null, currentMileage:0, fuelBalance:0, avgKmL:CONFIG.DEFAULT_KM_L, fuelPrice:CONFIG.DEFAULT_FUEL_PRICE,
+  lastFuelDate:null, lastDriveDate:null, activeTrip:null, fuelLog:[], tripLog:[], pendingSync:[], historyTab:'trips',
+  drivers:[...CONFIG.DEFAULT_DRIVERS]
+};
+
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+const byId = id => document.getElementById(id);
+const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const round2 = value => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+const fmtNum = n => (Number(n) || 0).toLocaleString('en-AE');
+const fmtDate = iso => {
+  if (!iso) return '-';
+  try { return new Date(iso).toLocaleDateString('en-AE', { day:'2-digit', month:'short', year:'numeric' }); } catch { return String(iso); }
+};
+const fmtTime = iso => {
+  if (!iso) return '-';
+  try { return new Date(iso).toLocaleTimeString('en-AE', { hour:'2-digit', minute:'2-digit' }); } catch { return String(iso); }
+};
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const makeId = () => (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+let toastTimer = null;
+let activeTripTimer = null;
+let deferredPrompt = null;
+
+function safe(label, fn, fallback) {
+  try { return fn(); } catch (error) { console.error(`[HiluxFleet] ${label}`, error); showToast(`${label} failed`, 'error'); return fallback; }
+}
+
+const Storage = {
+  key:'hilux_state_v2_1',
+  save() {
+    return safe('Save data', () => {
+      const payload = {
+        driver:State.driver, currentMileage:State.currentMileage, fuelBalance:State.fuelBalance, avgKmL:State.avgKmL,
+        fuelPrice:State.fuelPrice, lastFuelDate:State.lastFuelDate, lastDriveDate:State.lastDriveDate,
+        activeTrip:State.activeTrip, fuelLog:State.fuelLog, tripLog:State.tripLog, pendingSync:State.pendingSync,
+        historyTab:State.historyTab, drivers:State.drivers
+      };
+      localStorage.setItem(this.key, JSON.stringify(payload));
+      log('state saved', payload);
+      return true;
+    }, false);
+  },
+  load() {
+    return safe('Load data', () => {
+      const raw = localStorage.getItem(this.key) || localStorage.getItem('hilux_state');
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      Object.assign(State, data);
+      State.drivers = Array.isArray(State.drivers) && State.drivers.length ? State.drivers : [...CONFIG.DEFAULT_DRIVERS];
+      State.fuelLog = Array.isArray(State.fuelLog) ? State.fuelLog : [];
+      State.tripLog = Array.isArray(State.tripLog) ? State.tripLog : [];
+      State.pendingSync = Array.isArray(State.pendingSync) ? State.pendingSync : [];
+      State.fuelBalance = clamp(num(State.fuelBalance), 0, CONFIG.TANK_CAPACITY);
+      State.avgKmL = num(State.avgKmL) > 0 ? num(State.avgKmL) : CONFIG.DEFAULT_KM_L;
+      State.fuelPrice = num(State.fuelPrice) > 0 ? num(State.fuelPrice) : CONFIG.DEFAULT_FUEL_PRICE;
+      log('state loaded', State);
+      return true;
+    }, false);
+  },
+  reset() {
+    return safe('Reset data', () => {
+      localStorage.removeItem(this.key);
+      localStorage.removeItem('hilux_state');
+      const drivers = [...CONFIG.DEFAULT_DRIVERS];
+      Object.assign(State, {driver:null,currentMileage:0,fuelBalance:0,avgKmL:CONFIG.DEFAULT_KM_L,fuelPrice:CONFIG.DEFAULT_FUEL_PRICE,lastFuelDate:null,lastDriveDate:null,activeTrip:null,fuelLog:[],tripLog:[],pendingSync:[],historyTab:'trips',drivers});
+      return true;
+    }, false);
+  }
+};
+
+const FuelEngine = {
+  estimateFuelUsed(distanceKm) { return Math.max(0, num(distanceKm)) / (State.avgKmL || CONFIG.DEFAULT_KM_L); },
+  estimatedRange() { return clamp(State.fuelBalance, 0, CONFIG.TANK_CAPACITY) * (State.avgKmL || CONFIG.DEFAULT_KM_L); },
+  recalcAverage() {
+    const trips = State.tripLog.filter(t => num(t.dist) > 0 && num(t.fuelUsed) > 0);
+    if (!trips.length) return CONFIG.DEFAULT_KM_L;
+    const totalKm = trips.reduce((sum, t) => sum + num(t.dist), 0);
+    const totalFuel = trips.reduce((sum, t) => sum + num(t.fuelUsed), 0);
+    return totalFuel > 0 ? clamp(round2(totalKm / totalFuel), 3, 20) : CONFIG.DEFAULT_KM_L;
+  },
+  completeTrip(endMileage) {
+    const active = State.activeTrip;
+    if (!active) throw new Error('No active trip');
+    const distance = endMileage - active.startMileage;
+    if (distance < 0) throw new Error('End mileage is lower than start mileage');
+    const fuelUsed = round2(this.estimateFuelUsed(distance));
+    State.fuelBalance = round2(clamp(State.fuelBalance - fuelUsed, 0, CONFIG.TANK_CAPACITY));
+    State.currentMileage = endMileage;
+    State.lastDriveDate = new Date().toISOString();
+    const entry = {
+      id: makeId(),
+      date:State.lastDriveDate, driver:active.driver, vehicle:CONFIG.VEHICLE,
+      startMileage:active.startMileage, endMileage, dist:distance, fuelUsed,
+      startTime:active.startTime, endTime:State.lastDriveDate, remaining:State.fuelBalance
+    };
+    State.tripLog.push(entry);
+    State.activeTrip = null;
+    State.avgKmL = this.recalcAverage();
+    return entry;
+  },
+  addFuel(aed, mileage) {
+    const price = State.fuelPrice || CONFIG.DEFAULT_FUEL_PRICE;
+    const requestedLiters = round2(aed / price);
+    const availableCapacity = round2(CONFIG.TANK_CAPACITY - clamp(State.fuelBalance, 0, CONFIG.TANK_CAPACITY));
+    const litersAdded = round2(clamp(requestedLiters, 0, availableCapacity));
+    const capped = requestedLiters > litersAdded;
+    State.fuelBalance = round2(clamp(State.fuelBalance + litersAdded, 0, CONFIG.TANK_CAPACITY));
+    State.currentMileage = Math.max(State.currentMileage, mileage);
+    State.lastFuelDate = new Date().toISOString();
+    const entry = {
+      id: makeId(),
+      date:State.lastFuelDate, driver:State.driver, vehicle:CONFIG.VEHICLE,
+      aed:round2(aed), price:round2(price), requestedLiters, liters:litersAdded, capped,
+      mileage, avgKmLAtEntry:State.avgKmL, remaining:State.fuelBalance
+    };
+    State.fuelLog.push(entry);
+    return entry;
+  }
+};
+
+const Sync = {
+  isOnline:navigator.onLine,
+  canSend() { return this.isOnline && /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(CONFIG.GAS_URL); },
+  enqueue(type, data) {
+    const record = { id: makeId(), type, data, timestamp:Date.now(), tries:0 };
+    State.pendingSync.push(record);
+    Storage.save();
+    log('queued sync', record);
+    this.flushPending();
+  },
+  async send(record) {
+    const action = record.type === 'fuel' ? 'addFuel' : 'addTrip';
+    const response = await fetch(CONFIG.GAS_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({ action, data:record.data }) });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.ok === false) throw new Error(json.error || `HTTP ${response.status}`);
+    return json;
+  },
+  async flushPending() {
+    if (!this.canSend() || !State.pendingSync.length) { UI.renderSyncStatus(); return; }
+    const queue = [...State.pendingSync];
+    const remaining = [];
+    for (const record of queue) {
+      try {
+        await this.send(record);
+        log('synced', record.id);
+      } catch (error) {
+        record.tries = num(record.tries) + 1;
+        remaining.push(record);
+        warn('sync failed', error);
+      }
+    }
+    State.pendingSync = remaining;
+    Storage.save();
+    UI.renderSyncStatus();
+    if (queue.length && !remaining.length) showToast(`Synced ${queue.length} record(s)`, 'success');
+  },
+  updateOnlineStatus() {
+    this.isOnline = navigator.onLine;
+    UI.renderSyncStatus();
+    if (this.isOnline) this.flushPending();
+  }
+};
+
+const UI = {
+  goto(screenId) {
+    safe('Open screen', () => {
+      const target = byId(`screen-${screenId}`);
+      if (!target) throw new Error(`Missing screen-${screenId}`);
+      $$('.screen').forEach(s => s.classList.remove('active'));
+      target.classList.add('active');
+      window.scrollTo({ top:0, behavior:'instant' in window ? 'instant' : 'auto' });
+      log('screen', screenId);
+      if (screenId === 'dashboard') this.renderDashboard();
+      if (screenId === 'history') this.renderHistory();
+      if (screenId === 'settings') this.renderSettings();
+    });
+  },
+  populateDrivers() {
+    const options = ['<option value="">Choose Driver</option>', ...State.drivers.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`)].join('');
+    byId('driver-select').innerHTML = options;
+    if (State.driver) byId('driver-select').value = State.driver;
+    byId('filter-driver').innerHTML = '<option value="">All Drivers</option>' + State.drivers.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+  },
+  renderDashboard() {
+    safe('Render dashboard', () => {
+      State.fuelBalance = clamp(num(State.fuelBalance), 0, CONFIG.TANK_CAPACITY);
+      byId('dash-driver-name').textContent = State.driver || '-';
+      byId('dash-avatar').textContent = (State.driver || '?').slice(0,1).toUpperCase();
+      byId('stat-mileage').textContent = fmtNum(State.currentMileage);
+      byId('stat-fuel').textContent = State.fuelBalance.toFixed(1);
+      byId('stat-range').textContent = fmtNum(Math.round(FuelEngine.estimatedRange()));
+      byId('stat-kmL').textContent = State.avgKmL.toFixed(1);
+      byId('stat-last-drive').textContent = State.lastDriveDate ? fmtDate(State.lastDriveDate) : 'No trips yet';
+      byId('stat-last-fuel').textContent = State.lastFuelDate ? fmtDate(State.lastFuelDate) : 'No fuel yet';
+      byId('fuel-fill').style.width = `${(State.fuelBalance / CONFIG.TANK_CAPACITY) * 100}%`;
+      byId('actions-no-trip').style.display = State.activeTrip ? 'none' : 'grid';
+      byId('actions-in-trip').style.display = State.activeTrip ? 'grid' : 'none';
+      this.renderActiveTrip();
+      this.renderSyncStatus();
+    });
+  },
+  renderActiveTrip() {
+    const card = byId('active-trip-card');
+    if (!State.activeTrip) {
+      card.classList.remove('visible');
+      clearInterval(activeTripTimer);
+      activeTripTimer = null;
+      return;
+    }
+    card.classList.add('visible');
+    byId('atp-driver').textContent = State.activeTrip.driver;
+    byId('atp-time').textContent = fmtTime(State.activeTrip.startTime);
+    byId('atp-mileage').textContent = `${fmtNum(State.activeTrip.startMileage)} km`;
+    const updateDuration = () => {
+      const ms = Math.max(0, Date.now() - new Date(State.activeTrip.startTime).getTime());
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      byId('atp-duration').textContent = h ? `${h}h ${m}m` : `${m}m`;
+    };
+    updateDuration();
+    if (!activeTripTimer) activeTripTimer = setInterval(updateDuration, 30000);
+  },
+  renderSyncStatus() {
+    const pill = byId('conn-pill');
+    const label = byId('conn-label');
+    const pending = State.pendingSync.length;
+    pill.classList.remove('online','offline','pending');
+    if (pending) { pill.classList.add('pending'); label.textContent = `${pending} pending`; }
+    else if (Sync.isOnline) { pill.classList.add('online'); label.textContent = 'Online'; }
+    else { pill.classList.add('offline'); label.textContent = 'Offline'; }
+    byId('pending-count-desc').textContent = pending ? `${pending} record(s) waiting to sync` : 'No pending records';
+  },
+  showStartDrive() {
+    if (State.activeTrip) return this.showEndDrive();
+    byId('start-last-mileage').textContent = fmtNum(State.currentMileage);
+    byId('start-mileage-input').value = State.currentMileage || '';
+    byId('start-driver-badge').textContent = State.driver || 'Driver';
+    hideError('start-mileage-error');
+    this.goto('start-drive');
+  },
+  showEndDrive() {
+    if (!State.activeTrip) { showToast('No active trip', 'warning'); return this.goto('dashboard'); }
+    byId('end-driver-shown').textContent = State.activeTrip.driver;
+    byId('end-start-mileage').textContent = fmtNum(State.activeTrip.startMileage);
+    byId('end-mileage-input').value = '';
+    byId('calc-distance').textContent = '-';
+    byId('calc-fuel-used').textContent = '-';
+    hideError('end-mileage-error');
+    this.goto('end-drive');
+  },
+  showAddFuel() {
+    byId('fuel-price-display').textContent = `${State.fuelPrice.toFixed(2)} AED/L`;
+    byId('fuel-current-shown').textContent = `${State.fuelBalance.toFixed(1)} L`;
+    byId('fuel-aed-input').value = '';
+    byId('fuel-mileage-input').value = State.currentMileage || '';
+    this.updateFuelPreview();
+    hideError('fuel-aed-error');
+    hideError('fuel-mileage-error');
+    this.goto('add-fuel');
+  },
+  updateFuelPreview() {
+    const aed = num(byId('fuel-aed-input').value);
+    const liters = State.fuelPrice > 0 ? aed / State.fuelPrice : 0;
+    const available = CONFIG.TANK_CAPACITY - State.fuelBalance;
+    const cappedLiters = clamp(liters, 0, available);
+    byId('fuel-liters-preview').textContent = `${round2(cappedLiters).toFixed(2)} L`;
+    byId('tank-warning').classList.toggle('show', liters > available && aed > 0);
+  },
+  updateEndPreview() {
+    const end = num(byId('end-mileage-input').value);
+    const start = State.activeTrip ? State.activeTrip.startMileage : 0;
+    const distance = Math.max(0, end - start);
+    byId('calc-distance').textContent = `${fmtNum(distance)} km`;
+    byId('calc-fuel-used').textContent = `${FuelEngine.estimateFuelUsed(distance).toFixed(1)} L`;
+  },
+  renderHistory() {
+    safe('Render history', () => {
+      const tab = State.historyTab;
+      byId('tab-trips').classList.toggle('active', tab === 'trips');
+      byId('tab-fuel').classList.toggle('active', tab === 'fuel');
+      const driver = byId('filter-driver').value;
+      const month = byId('filter-date').value;
+      let items = tab === 'trips' ? [...State.tripLog] : [...State.fuelLog];
+      if (driver) items = items.filter(i => i.driver === driver);
+      if (month) items = items.filter(i => String(i.date || '').startsWith(month));
+      items.reverse();
+      this.renderHistorySummary(tab, items);
+      const list = byId('history-list');
+      if (!items.length) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg><use href="${tab === 'trips' ? '#ic-route' : '#ic-fuel'}"/></svg></div><div class="empty-title">No ${tab === 'trips' ? 'trips' : 'fuel entries'} yet</div><div class="empty-sub">Records will appear here after logging.</div></div>`;
+        return;
+      }
+      list.innerHTML = items.map(item => tab === 'trips' ? this.tripItem(item) : this.fuelItem(item)).join('');
+    });
+  },
+  renderHistorySummary(tab, items) {
+    if (tab === 'trips') {
+      const km = items.reduce((s,t) => s + num(t.dist), 0);
+      const fuel = items.reduce((s,t) => s + num(t.fuelUsed), 0);
+      byId('history-summary').innerHTML = `<div class="summary-chip"><div class="chip-lbl">Trips</div><div class="chip-val">${items.length}</div></div><div class="summary-chip"><div class="chip-lbl">Distance</div><div class="chip-val">${fmtNum(km)} km</div></div><div class="summary-chip"><div class="chip-lbl">Fuel Used</div><div class="chip-val">${fuel.toFixed(1)} L</div></div>`;
+    } else {
+      const liters = items.reduce((s,f) => s + num(f.liters), 0);
+      const aed = items.reduce((s,f) => s + num(f.aed), 0);
+      byId('history-summary').innerHTML = `<div class="summary-chip"><div class="chip-lbl">Entries</div><div class="chip-val">${items.length}</div></div><div class="summary-chip"><div class="chip-lbl">Liters</div><div class="chip-val">${liters.toFixed(1)} L</div></div><div class="summary-chip"><div class="chip-lbl">Spend</div><div class="chip-val">${aed.toFixed(0)} AED</div></div>`;
+    }
+  },
+  tripItem(t) {
+    return `<div class="history-item"><div class="history-item-icon"><svg><use href="#ic-route"/></svg></div><div class="history-item-body"><div class="hi-top"><span class="hi-driver">${escapeHtml(t.driver)}</span><span class="hi-primary">${fmtNum(t.dist)} km</span></div><div class="hi-meta">${fmtDate(t.date)} · Fuel: ${num(t.fuelUsed).toFixed(1)} L · ${num(t.dist) && num(t.fuelUsed) ? (num(t.dist)/num(t.fuelUsed)).toFixed(1) : State.avgKmL.toFixed(1)} km/L</div><div class="hi-mileage">${fmtNum(t.startMileage)} to ${fmtNum(t.endMileage)} km</div></div></div>`;
+  },
+  fuelItem(f) {
+    return `<div class="history-item"><div class="history-item-icon"><svg><use href="#ic-fuel"/></svg></div><div class="history-item-body"><div class="hi-top"><span class="hi-driver">${escapeHtml(f.driver)}</span><span class="hi-primary">${num(f.aed).toFixed(0)} AED</span></div><div class="hi-meta">${fmtDate(f.date)} · ${num(f.liters).toFixed(1)} L @ ${num(f.price).toFixed(2)} AED/L${f.capped ? ' · capped' : ''}</div><div class="hi-mileage">${fmtNum(f.mileage)} km · Remaining ${num(f.remaining).toFixed(1)} L</div></div></div>`;
+  },
+  renderSettings() {
+    byId('display-fuel-price').textContent = `${State.fuelPrice.toFixed(2)} AED`;
+    byId('input-fuel-price').value = State.fuelPrice.toFixed(2);
+    byId('driver-count-desc').textContent = `${State.drivers.length} drivers configured`;
+    byId('driver-list-items').innerHTML = State.drivers.map(driver => `<div class="settings-row" style="cursor:default;margin:0"><div class="settings-row-body"><div class="settings-row-title">${escapeHtml(driver)}</div></div></div>`).join('');
+    this.renderSyncStatus();
+  }
+};
+
+function showToast(message, type='') {
+  const t = byId('toast');
+  t.textContent = message;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+function showError(id) { byId(id)?.classList.add('show'); }
+function hideError(id) { byId(id)?.classList.remove('show'); }
+function showModal(id) { byId(id)?.classList.add('show'); }
+function hideModal(id) { byId(id)?.classList.remove('show'); }
+function bindClick(id, handler) {
+  const el = byId(id);
+  if (!el) { console.error(`[HiluxFleet] Missing element #${id}`); return; }
+  const wrapped = event => safe(`Action ${id}`, () => handler(event));
+  el.addEventListener('click', wrapped);
+  if (el.classList.contains('action-card')) {
+    el.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); wrapped(event); } });
+  }
+}
+function validateMileage(value, min=0) {
+  const mileage = Math.floor(num(value));
+  return Number.isFinite(mileage) && mileage >= min ? mileage : null;
+}
+function startTrip() {
+  const mileage = validateMileage(byId('start-mileage-input').value, State.currentMileage);
+  if (mileage === null) { showError('start-mileage-error'); return; }
+  State.activeTrip = { driver:State.driver, startMileage:mileage, startTime:new Date().toISOString() };
+  State.currentMileage = mileage;
+  Storage.save();
+  showToast('Trip started', 'success');
+  UI.goto('dashboard');
+}
+function endTrip() {
+  const start = State.activeTrip?.startMileage ?? 0;
+  const end = validateMileage(byId('end-mileage-input').value, start);
+  if (end === null) { showError('end-mileage-error'); return; }
+  const entry = FuelEngine.completeTrip(end);
+  Storage.save();
+  Sync.enqueue('trip', entry);
+  showToast(`Trip saved - ${fmtNum(entry.dist)} km`, 'success');
+  UI.goto('dashboard');
+}
+function addFuel() {
+  const aed = num(byId('fuel-aed-input').value);
+  const mileage = validateMileage(byId('fuel-mileage-input').value, State.currentMileage);
+  let valid = true;
+  if (aed <= 0) { showError('fuel-aed-error'); valid = false; } else hideError('fuel-aed-error');
+  if (mileage === null) { showError('fuel-mileage-error'); valid = false; } else hideError('fuel-mileage-error');
+  if (!valid) return;
+  const entry = FuelEngine.addFuel(aed, mileage);
+  Storage.save();
+  Sync.enqueue('fuel', entry);
+  showToast(entry.capped ? `Fuel capped at ${CONFIG.TANK_CAPACITY} L` : `${entry.liters.toFixed(1)} L added`, entry.capped ? 'warning' : 'success');
+  UI.goto('dashboard');
+}
+function exportRows(filename, headers, rows) {
+  const clean = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const csv = [headers, ...rows].map(row => row.map(clean).join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function exportCSV(all=false) {
+  safe('Export CSV', () => {
+    const stamp = new Date().toISOString().slice(0,10);
+    if (all) {
+      const headers = ['Type','Date','Driver','Start Mileage','End Mileage','Distance Km','Fuel Used L','AED','Liters','Mileage','Remaining L'];
+      const tripRows = State.tripLog.map(t => ['Trip',fmtDate(t.date),t.driver,t.startMileage,t.endMileage,t.dist,t.fuelUsed,'','','',t.remaining]);
+      const fuelRows = State.fuelLog.map(f => ['Fuel',fmtDate(f.date),f.driver,'','','','',f.aed,f.liters,f.mileage,f.remaining]);
+      exportRows(`hilux_all_${stamp}.csv`, headers, [...tripRows, ...fuelRows]);
+    } else if (State.historyTab === 'trips') {
+      exportRows(`hilux_trips_${stamp}.csv`, ['Date','Driver','Start Mileage','End Mileage','Distance Km','Fuel Used L','Remaining L'], State.tripLog.map(t => [fmtDate(t.date),t.driver,t.startMileage,t.endMileage,t.dist,t.fuelUsed,t.remaining]));
+    } else {
+      exportRows(`hilux_fuel_${stamp}.csv`, ['Date','Driver','AED','Price','Liters','Mileage','Remaining L','Capped'], State.fuelLog.map(f => [fmtDate(f.date),f.driver,f.aed,f.price,f.liters,f.mileage,f.remaining,f.capped ? 'Yes' : 'No']));
+    }
+    showToast('CSV exported', 'success');
+  });
+}
+function bindEvents() {
+  bindClick('btn-welcome-continue', () => {
+    const driver = byId('driver-select').value;
+    if (!driver) { showError('driver-error'); return; }
+    hideError('driver-error');
+    State.driver = driver;
+    Storage.save();
+    UI.goto('dashboard');
+  });
+  bindClick('btn-goto-settings', () => UI.goto('settings'));
+  bindClick('btn-goto-settings-card', () => UI.goto('settings'));
+  bindClick('btn-goto-history', () => UI.goto('history'));
+  bindClick('btn-start-drive', () => UI.showStartDrive());
+  bindClick('btn-add-fuel', () => UI.showAddFuel());
+  bindClick('btn-add-fuel-trip', () => UI.showAddFuel());
+  bindClick('btn-end-drive-dash', () => UI.showEndDrive());
+  bindClick('btn-end-drive-action', () => UI.showEndDrive());
+  bindClick('btn-change-driver', () => State.activeTrip ? showModal('modal-trip-warning') : UI.goto('welcome'));
+  bindClick('modal-go-end-trip', () => { hideModal('modal-trip-warning'); UI.showEndDrive(); });
+  bindClick('modal-cancel-driver', () => hideModal('modal-trip-warning'));
+  bindClick('btn-use-last-mileage', () => { byId('start-mileage-input').value = State.currentMileage || 0; });
+  bindClick('btn-start-trip', startTrip);
+  bindClick('btn-end-trip', endTrip);
+  bindClick('btn-confirm-fuel', addFuel);
+  bindClick('tab-trips', () => { State.historyTab = 'trips'; Storage.save(); UI.renderHistory(); });
+  bindClick('tab-fuel', () => { State.historyTab = 'fuel'; Storage.save(); UI.renderHistory(); });
+  bindClick('btn-clear-filters', () => { byId('filter-driver').value = ''; byId('filter-date').value = ''; UI.renderHistory(); });
+  bindClick('btn-export-csv', () => exportCSV(false));
+  bindClick('row-fuel-price', () => byId('edit-fuel-price-row').classList.toggle('show'));
+  bindClick('btn-save-fuel-price', () => {
+    const price = num(byId('input-fuel-price').value);
+    if (price <= 0) { showToast('Enter a valid fuel price', 'error'); return; }
+    State.fuelPrice = round2(price);
+    Storage.save();
+    byId('edit-fuel-price-row').classList.remove('show');
+    UI.renderSettings(); UI.renderDashboard();
+    showToast('Fuel price saved', 'success');
+  });
+  bindClick('btn-cancel-fuel-price', () => { byId('edit-fuel-price-row').classList.remove('show'); UI.renderSettings(); });
+  bindClick('row-add-driver', () => { byId('driver-edit-panel').classList.toggle('show'); UI.renderSettings(); });
+  bindClick('btn-add-driver', () => {
+    const name = byId('input-new-driver').value.trim();
+    if (!name) return showToast('Enter a driver name', 'error');
+    if (State.drivers.some(d => d.toLowerCase() === name.toLowerCase())) return showToast('Driver already exists', 'warning');
+    State.drivers.push(name);
+    byId('input-new-driver').value = '';
+    UI.populateDrivers(); UI.renderSettings(); Storage.save();
+  });
+  bindClick('btn-sync-now', () => Sync.flushPending());
+  bindClick('btn-export-all', () => exportCSV(true));
+  bindClick('btn-reset-data', () => showModal('modal-reset'));
+  bindClick('modal-confirm-reset', () => { Storage.reset(); hideModal('modal-reset'); UI.populateDrivers(); UI.goto('welcome'); showToast('Local data reset', 'success'); });
+  bindClick('modal-cancel-reset', () => hideModal('modal-reset'));
+  bindClick('btn-install', async () => {
+    if (!deferredPrompt) return showToast('Install from your browser menu', 'warning');
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice.catch(() => null);
+    deferredPrompt = null;
+    byId('install-banner').classList.remove('visible');
+  });
+  bindClick('btn-dismiss-install', () => byId('install-banner').classList.remove('visible'));
+  byId('fuel-aed-input').addEventListener('input', () => safe('Fuel preview', () => UI.updateFuelPreview()));
+  byId('end-mileage-input').addEventListener('input', () => safe('Trip preview', () => UI.updateEndPreview()));
+  byId('filter-driver').addEventListener('change', () => UI.renderHistory());
+  byId('filter-date').addEventListener('change', () => UI.renderHistory());
+  $$('[data-back]').forEach(btn => btn.addEventListener('click', () => UI.goto(btn.dataset.back)));
+  window.addEventListener('online', () => Sync.updateOnlineStatus());
+  window.addEventListener('offline', () => Sync.updateOnlineStatus());
+  window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredPrompt = event; byId('install-banner').classList.add('visible'); });
+  window.addEventListener('error', event => console.error('[HiluxFleet] runtime error', event.error || event.message));
+  window.addEventListener('unhandledrejection', event => console.error('[HiluxFleet] unhandled rejection', event.reason));
+}
+function auditRuntime() {
+  safe('Runtime audit', () => {
+    const ids = new Set($$('[id]').map(el => el.id));
+    const expected = ['driver-select','btn-welcome-continue','conn-pill','conn-label','btn-goto-settings','dash-avatar','dash-driver-name','btn-change-driver','active-trip-card','atp-driver','atp-time','atp-mileage','atp-duration','btn-end-drive-dash','stat-mileage','stat-fuel','fuel-fill','stat-range','stat-kmL','stat-last-drive','stat-last-fuel','actions-no-trip','btn-start-drive','btn-add-fuel','actions-in-trip','btn-end-drive-action','btn-add-fuel-trip','btn-goto-history','btn-goto-settings-card','start-driver-badge','start-last-mileage','btn-use-last-mileage','start-mileage-input','btn-start-trip','end-driver-shown','end-start-mileage','calc-distance','calc-fuel-used','end-mileage-input','btn-end-trip','fuel-price-display','fuel-current-shown','fuel-aed-input','fuel-liters-preview','tank-warning','fuel-mileage-input','btn-confirm-fuel','btn-export-csv','tab-trips','tab-fuel','history-summary','filter-driver','filter-date','btn-clear-filters','history-list','row-fuel-price','edit-fuel-price-row','input-fuel-price','btn-save-fuel-price','btn-cancel-fuel-price','row-add-driver','driver-edit-panel','driver-list-items','input-new-driver','btn-add-driver','btn-sync-now','pending-count-desc','btn-export-all','btn-reset-data','modal-trip-warning','modal-go-end-trip','modal-cancel-driver','modal-reset','modal-confirm-reset','modal-cancel-reset','toast','install-banner','btn-install','btn-dismiss-install'];
+    const missing = expected.filter(id => !ids.has(id));
+    if (missing.length) console.error('[HiluxFleet] Missing IDs', missing);
+    else log('All expected IDs found');
+    $$('button, .action-card[role="button"], .settings-row[id]').forEach(el => {
+      if (!el.id) warn('Clickable element without id', el);
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  safe('Boot app', () => {
+    Storage.load();
+    UI.populateDrivers();
+    bindEvents();
+    auditRuntime();
+    Sync.updateOnlineStatus();
+    UI.goto(State.driver ? 'dashboard' : 'welcome');
+    setInterval(() => Sync.flushPending(), 60000);
+  });
+});
+</script>
+</body>
+</html>
