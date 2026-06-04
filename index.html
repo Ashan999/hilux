@@ -362,17 +362,18 @@ document.getElementById('manifest-link').href = 'data:application/manifest+json,
 }));
 
 const CONFIG = {
-  VEHICLE: 'Toyota Hilux',
-  FUEL_TYPE: 'Petrol',
-  TANK_CAPACITY: 80,
-  DEFAULT_FUEL_PRICE: 2.70,
-  DEFAULT_KM_L: 9,
-  DEFAULT_DRIVERS: ['Ahmed', 'Ali', 'Kumar', 'Ashan'],
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbx6JHuD5GrLQzX0AWw9N3Y9k2q_6N3hd3ijj1iiak2P8GzznK3iRwApl2w7UPrS1ijg/exec', // <-- මෙන්න මෙතන අනිවාර්යයෙන්ම මේ කොමාව (,) තියෙන්න ඕනේ!
-  STORAGE_KEY: 'hilux_state_v2_2', // ඔයාගේ පරණ කෝඩ් එකේ තිබ්බ STORAGE_KEY එක
-  BACKUP_VERSION: 1
+  VEHICLE:'Toyota Hilux',
+  FUEL_TYPE:'Petrol',
+  TANK_CAPACITY:80,
+  DEFAULT_FUEL_PRICE:2.70,
+  DEFAULT_KM_L:9,
+  DEFAULT_DRIVERS:['Ahmed','Ali','Kumar','Ashan'],
+  DEFAULT_SERVICE_INTERVAL:5000,
+  SERVICE_WARN_KM:250,
+  GAS_URL:'https://script.google.com/macros/s/AKfycbx6JHuD5GrLQzX0AWw9N3Y9k2q_6N3hd3ijj1iiak2P8GzznK3iRwApl2w7UPrS1ijg/exec',
+  STORAGE_KEY:'hilux_state_v2_2',
+  BACKUP_VERSION:1
 };
-  
 const TASK_TYPES = [
   'Pickup Team','Drop Off Team','Site Visit','Installation Work',
   'Material Delivery','Customer Visit','Fuel Filling','Office Run','Other'
@@ -383,7 +384,7 @@ const warn = (...args) => { if (DEBUG) console.warn('[HiluxFleet]', ...args); };
 
 const State = {
   driver:null, currentMileage:0, fuelBalance:0, avgKmL:CONFIG.DEFAULT_KM_L, fuelPrice:CONFIG.DEFAULT_FUEL_PRICE,
-  lastFuelDate:null, lastDriveDate:null, activeTrip:null, fuelLog:[], tripLog:[], pendingSync:[], historyTab:'trips',
+  lastFuelDate:null, lastDriveDate:null, activeTrip:null, fuelLog:[], tripLog:[], pendingSync:[], syncedRecordIds:[], historyTab:'trips',
   drivers:[...CONFIG.DEFAULT_DRIVERS],
   commentMemory:{}, favorites:[], lastTripTemplate:null,
   serviceLastMileage:0, serviceInterval:CONFIG.DEFAULT_SERVICE_INTERVAL,
@@ -411,6 +412,7 @@ const fmtTime = iso => {
 };
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const makeId = () => (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const makeRecordId = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
 let toastTimer = null;
 let activeTripTimer = null;
@@ -426,7 +428,7 @@ const Storage = {
     return {
       driver:State.driver, currentMileage:State.currentMileage, fuelBalance:State.fuelBalance, avgKmL:State.avgKmL,
       fuelPrice:State.fuelPrice, lastFuelDate:State.lastFuelDate, lastDriveDate:State.lastDriveDate,
-      activeTrip:State.activeTrip, fuelLog:State.fuelLog, tripLog:State.tripLog, pendingSync:State.pendingSync,
+      activeTrip:State.activeTrip, fuelLog:State.fuelLog, tripLog:State.tripLog, pendingSync:State.pendingSync, syncedRecordIds:State.syncedRecordIds,
       historyTab:State.historyTab, drivers:State.drivers,
       commentMemory:State.commentMemory, favorites:State.favorites, lastTripTemplate:State.lastTripTemplate,
       serviceLastMileage:State.serviceLastMileage, serviceInterval:State.serviceInterval,
@@ -438,6 +440,7 @@ const Storage = {
     State.fuelLog = Array.isArray(data.fuelLog) ? data.fuelLog : [];
     State.tripLog = Array.isArray(data.tripLog) ? data.tripLog : [];
     State.pendingSync = Array.isArray(data.pendingSync) ? data.pendingSync.filter(r => r && r.type && r.data) : [];
+    State.syncedRecordIds = Array.isArray(data.syncedRecordIds) ? [...new Set(data.syncedRecordIds.filter(Boolean))].slice(-1000) : [];
     State.commentMemory = data.commentMemory && typeof data.commentMemory === 'object' ? data.commentMemory : {};
     State.favorites = Array.isArray(data.favorites) ? data.favorites : [];
     State.lastTripTemplate = data.lastTripTemplate && typeof data.lastTripTemplate === 'object' ? data.lastTripTemplate : null;
@@ -476,7 +479,7 @@ const Storage = {
       const drivers = [...CONFIG.DEFAULT_DRIVERS];
       Object.assign(State, {
         driver:null, currentMileage:0, fuelBalance:0, avgKmL:CONFIG.DEFAULT_KM_L, fuelPrice:CONFIG.DEFAULT_FUEL_PRICE,
-        lastFuelDate:null, lastDriveDate:null, activeTrip:null, fuelLog:[], tripLog:[], pendingSync:[],
+        lastFuelDate:null, lastDriveDate:null, activeTrip:null, fuelLog:[], tripLog:[], pendingSync:[], syncedRecordIds:[],
         historyTab:'trips', drivers, commentMemory:{}, favorites:[], lastTripTemplate:null,
         serviceLastMileage:0, serviceInterval:CONFIG.DEFAULT_SERVICE_INTERVAL, theme:'dark'
       });
@@ -700,8 +703,10 @@ const FuelEngine = {
     State.fuelBalance = round2(clamp(State.fuelBalance - fuelUsed, 0, CONFIG.TANK_CAPACITY));
     State.currentMileage = endMileage;
     State.lastDriveDate = new Date().toISOString();
+    const tripId = active.tripId || active.id || makeRecordId('TRIP');
     const entry = {
-      id: makeId(),
+      id: tripId,
+      tripId,
       date:State.lastDriveDate, driver:active.driver, vehicle:CONFIG.VEHICLE,
       startMileage:active.startMileage, endMileage, dist:distance, fuelUsed,
       startTime:active.startTime, endTime:State.lastDriveDate, remaining:State.fuelBalance,
@@ -730,8 +735,10 @@ const FuelEngine = {
     State.fuelBalance = round2(clamp(State.fuelBalance + litersAdded, 0, CONFIG.TANK_CAPACITY));
     State.currentMileage = Math.max(State.currentMileage, mileage);
     State.lastFuelDate = new Date().toISOString();
+    const fuelId = makeRecordId('FUEL');
     const entry = {
-      id: makeId(),
+      id: fuelId,
+      fuelId,
       date:State.lastFuelDate, driver:State.driver, vehicle:CONFIG.VEHICLE,
       aed:round2(aed), price:round2(price), requestedLiters, liters:litersAdded, capped,
       mileage, avgKmLAtEntry:State.avgKmL, remaining:State.fuelBalance
@@ -741,45 +748,151 @@ const FuelEngine = {
   }
 };
 
+/*
+  Google Apps Script (Web App, execute as Me, access Anyone) — doGet for JSONP:
+
+  function doGet(e) {
+    const cb = e.parameter.callback || 'callback';
+    const action = e.parameter.action || '';
+    const data = JSON.parse(e.parameter.data || '{}');
+    let out = { ok: true };
+    try {
+      if (action === 'addTrip') { /* write trip row *\/ }
+      else if (action === 'addFuel') { /* write fuel row *\/ }
+      else throw new Error('Unknown action');
+    } catch (err) {
+      out = { ok: false, error: String(err.message || err) };
+    }
+    return ContentService.createTextOutput(cb + '(' + JSON.stringify(out) + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+*/
 const Sync = {
   isOnline:navigator.onLine,
+  JSONP_MAX_URL:7800,
+  JSONP_TIMEOUT:45000,
+  _jsonpSeq:0,
   canSend() { return this.isOnline && /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(CONFIG.GAS_URL); },
+  recordKey(record) {
+    return record?.data?.id || record?.data?.tripId || record?.data?.fuelId || record?.id || '';
+  },
+  markSynced(recordId) {
+    if (!recordId) return;
+    if (!State.syncedRecordIds.includes(recordId)) {
+      State.syncedRecordIds.push(recordId);
+      State.syncedRecordIds = State.syncedRecordIds.slice(-1000);
+    }
+    State.pendingSync = State.pendingSync.filter(r => this.recordKey(r) !== recordId);
+    Storage.save();
+    UI.renderSyncStatus();
+  },
   enqueue(type, data) {
-    const record = { id: makeId(), type, data, timestamp:Date.now(), tries:0 };
+    const entryId = data?.id || data?.tripId || data?.fuelId;
+    if (!entryId) {
+      warn('sync skipped: missing record id', type, data);
+      return;
+    }
+    if (State.syncedRecordIds.includes(entryId)) {
+      log('sync skipped: already synced locally', entryId);
+      return;
+    }
+    if (State.pendingSync.some(r => this.recordKey(r) === entryId)) {
+      warn('duplicate pending sync skipped', entryId);
+      this.flushPending();
+      return;
+    }
+    const record = { id: entryId, type, data, timestamp:Date.now(), tries:0 };
     State.pendingSync.push(record);
     Storage.save();
     log('queued sync', record);
     this.flushPending();
   },
+  jsonp(params) {
+    return new Promise((resolve, reject) => {
+      const cbName = `hiluxJsonp_${Date.now()}_${++this._jsonpSeq}`;
+      const script = document.createElement('script');
+      let settled = false;
+      const finish = (err, result) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try { delete window[cbName]; } catch (_) { window[cbName] = undefined; }
+        script.remove();
+        if (err) reject(err);
+        else resolve(result);
+      };
+      window[cbName] = result => finish(null, result);
+      script.onerror = () => finish(new Error('JSONP script failed to load'));
+      const timer = setTimeout(() => finish(new Error('JSONP timeout')), this.JSONP_TIMEOUT);
+      const qs = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => {
+        if (v != null && v !== '') qs.set(k, typeof v === 'string' ? v : JSON.stringify(v));
+      });
+      qs.set('callback', cbName);
+      const sep = CONFIG.GAS_URL.includes('?') ? '&' : '?';
+      const url = CONFIG.GAS_URL + sep + qs.toString();
+      if (url.length > this.JSONP_MAX_URL) {
+        clearTimeout(timer);
+        script.remove();
+        finish(new Error(`JSONP URL too long (${url.length} chars)`));
+        return;
+      }
+      script.src = url;
+      document.head.appendChild(script);
+    });
+  },
   async send(record) {
+    if (!record || !record.type || !record.data) throw new Error('Invalid sync record');
+    const recordId = this.recordKey(record);
+    if (!recordId) throw new Error('Sync record missing ID');
+    if (State.syncedRecordIds.includes(recordId)) {
+      return { ok:true, skipped:true, message:'Already synced locally', recordId };
+    }
     const action = record.type === 'fuel' ? 'addFuel' : 'addTrip';
-    const response = await fetch(CONFIG.GAS_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({ action, data:record.data }) });
-    const json = await response.json().catch(() => ({}));
-    if (!response.ok || json.ok === false) throw new Error(json.error || `HTTP ${response.status}`);
+    const json = await this.jsonp({
+      action,
+      data: JSON.stringify(record.data),
+      recordId
+    });
+    if (!json || typeof json !== 'object') throw new Error('Invalid JSONP response');
+    if (json.ok === false) throw new Error(json.error || 'Sync rejected');
     return json;
   },
   async flushPending() {
     if (syncFlushInFlight || !this.canSend() || !State.pendingSync.length) { UI.renderSyncStatus(); return; }
     syncFlushInFlight = true;
+    let synced = 0;
     try {
-      const queue = [...State.pendingSync];
-      const remaining = [];
-      for (const record of queue) {
+      while (State.pendingSync.length && this.canSend()) {
+        const record = State.pendingSync[0];
+        const recordId = this.recordKey(record);
+        if (!recordId || State.syncedRecordIds.includes(recordId)) {
+          State.pendingSync.shift();
+          Storage.save();
+          UI.renderSyncStatus();
+          continue;
+        }
         try {
-          await this.send(record);
-          log('synced', record.id);
+          const result = await this.send(record);
+          log(result?.duplicate ? 'duplicate skipped by sheet' : 'synced', recordId);
+          this.markSynced(recordId);
+          synced += 1;
         } catch (error) {
           record.tries = num(record.tries) + 1;
-          if (record.tries < 8) remaining.push(record);
-          warn('sync failed', error);
+          warn('sync failed', recordId, error);
+          if (record.tries >= 8) {
+            State.pendingSync.shift();
+            warn('dropping sync record after 8 tries', recordId);
+          }
+          Storage.save();
+          UI.renderSyncStatus();
+          break;
         }
       }
-      State.pendingSync = remaining;
-      Storage.save();
-      UI.renderSyncStatus();
-      if (queue.length && !remaining.length) showToast(`Synced ${queue.length} record(s)`, 'success');
+      if (synced) showToast(`Synced ${synced} record(s)`, 'success');
     } finally {
       syncFlushInFlight = false;
+      UI.renderSyncStatus();
     }
   },
   updateOnlineStatus() {
@@ -1160,6 +1273,20 @@ function bindClick(id, handler) {
     el.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); wrapped(event); } });
   }
 }
+function setSaving(id, saving, text='Saving...') {
+  const el = byId(id);
+  if (!el) return;
+  if (saving) {
+    el.dataset.originalText = el.textContent.trim();
+    el.disabled = true;
+    el.classList.add('disabled');
+    el.textContent = text;
+  } else {
+    el.disabled = false;
+    el.classList.remove('disabled');
+    if (el.dataset.originalText) el.textContent = el.dataset.originalText;
+  }
+}
 function validateMileage(value, min=0) {
   const mileage = Math.floor(num(value));
   return Number.isFinite(mileage) && mileage >= min ? mileage : null;
@@ -1178,9 +1305,12 @@ function startTrip() {
     return;
   }
   tripActionLock = true;
+  setSaving('btn-start-trip', true);
   try {
     TaskMemory.remember(taskType, locationComment);
+    const tripId = makeRecordId('TRIP');
     State.activeTrip = {
+      id:tripId, tripId,
       driver:State.driver, startMileage:mileage, startTime:new Date().toISOString(),
       taskType, destination, locationComment, startNote
     };
@@ -1189,6 +1319,7 @@ function startTrip() {
     showToast('Trip started', 'success');
     UI.goto('dashboard');
   } finally {
+    setSaving('btn-start-trip', false);
     tripActionLock = false;
   }
 }
@@ -1198,6 +1329,7 @@ function endTrip() {
   const end = validateMileage(byId('end-mileage-input').value, start);
   if (end === null) { showError('end-mileage-error'); return; }
   tripActionLock = true;
+  setSaving('btn-end-trip', true);
   try {
     const entry = FuelEngine.completeTrip(end, byId('end-note').value.trim());
     Storage.save();
@@ -1205,6 +1337,7 @@ function endTrip() {
     showToast(`Trip saved - ${fmtNum(entry.dist)} km`, 'success');
     UI.goto('dashboard');
   } finally {
+    setSaving('btn-end-trip', false);
     tripActionLock = false;
   }
 }
@@ -1216,17 +1349,25 @@ function debounce(fn, wait=220) {
   };
 }
 function addFuel() {
+  if (tripActionLock) return;
   const aed = num(byId('fuel-aed-input').value);
   const mileage = validateMileage(byId('fuel-mileage-input').value, State.currentMileage);
   let valid = true;
   if (aed <= 0) { showError('fuel-aed-error'); valid = false; } else hideError('fuel-aed-error');
   if (mileage === null) { showError('fuel-mileage-error'); valid = false; } else hideError('fuel-mileage-error');
   if (!valid) return;
-  const entry = FuelEngine.addFuel(aed, mileage);
-  Storage.save();
-  Sync.enqueue('fuel', entry);
-  showToast(entry.capped ? `Fuel capped at ${CONFIG.TANK_CAPACITY} L` : `${entry.liters.toFixed(1)} L added`, entry.capped ? 'warning' : 'success');
-  UI.goto('dashboard');
+  tripActionLock = true;
+  setSaving('btn-confirm-fuel', true);
+  try {
+    const entry = FuelEngine.addFuel(aed, mileage);
+    Storage.save();
+    Sync.enqueue('fuel', entry);
+    showToast(entry.capped ? `Fuel capped at ${CONFIG.TANK_CAPACITY} L` : `${entry.liters.toFixed(1)} L added`, entry.capped ? 'warning' : 'success');
+    UI.goto('dashboard');
+  } finally {
+    setSaving('btn-confirm-fuel', false);
+    tripActionLock = false;
+  }
 }
 function exportRows(filename, headers, rows) {
   const clean = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
